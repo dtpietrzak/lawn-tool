@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from 'next/navigation'
-import ZipCodeSearch from '@/app/[zipCode]/components/ZipCodeSearch'
+import ZipCodeSearch from '@/app/[zipCode]/_components/navbar/ZipCodeSearch'
 import { Text } from "@mantine/core"
 import { useLocalStorage } from "@mantine/hooks"
 

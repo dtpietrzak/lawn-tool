@@ -1,17 +1,17 @@
-import { getDailyGdd, getF } from "@/tools/formulae";
-import { formatDate } from "@/tools/formatters"
+import { getDailyGdd, getF } from "@/_tools/formulae";
+import { formatDate } from "@/_tools/formatters"
 import { GetWeatherData } from "@/app/api/tools/requests";
 import { Card, Flex, Text, Progress } from "@mantine/core";
 import { IconDroplet, IconPlant, IconPlantOff } from "@tabler/icons-react";
 import { FC } from "react";
-import TabContainer from "../components/TabContainer";
-import TabTitle from "../components/TabTitle";
-import Temperature from "./components/Temperature";
-import GrowingDegreeDays from "./components/GrowingDegreeDays";
-import IconAndText from "../components/IconAndText";
+import TabContainer from "../_components/tabs/TabContainer";
+import TabTitle from "../_components/tabs/TabTitle";
+import Temperature from "./_components/Temperature";
+import GrowingDegreeDays from "./_components/GrowingDegreeDays";
+import IconAndText from "../_components/IconAndText";
 import { CurrentProperties, DateDataArray, WeeklyData } from "../types";
-import EditText from "../components/EditText";
-import { isValidAmount } from "@/tools/utils";
+import EditText from "../_components/EditText";
+import { isValidAmount } from "@/_tools/utils";
 
 export type OverviewProps = {
   weatherData: GetWeatherData
@@ -28,9 +28,10 @@ const Overview: FC<OverviewProps> = ({
 }) => {
   return (
     <TabContainer>
-      <TabTitle>
-        {`${weatherData.location} - Overview`}
-      </TabTitle>
+      <TabTitle
+        primary='Overview'
+        secondary={weatherData.location}
+      />
       <Card
         shadow="sm"
         padding="md"

@@ -1,7 +1,7 @@
 import { ActionIcon, TextInput, rem } from "@mantine/core"
 import { IconArrowRight, IconSearch } from "@tabler/icons-react"
 import { FC } from "react"
-import { theme } from "../../theme"
+import { theme } from "../../../theme"
 import { useParams } from "next/navigation"
 
 export type ZipCodeSearchProps = {
