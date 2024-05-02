@@ -2,11 +2,12 @@
 
 import { AppShell, Burger, Flex, SimpleGrid, Title, Text, rem, Box, Divider } from '@mantine/core';
 import { useDisclosure, useHeadroom, useWindowScroll } from '@mantine/hooks';
-import ZipCodeSearch from './components/ZipCodeSearch';
+import ZipCodeSearch from './_components/navbar/ZipCodeSearch';
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Icon12Hours, Icon24Hours, IconAbacus, IconDashboard, IconForklift, IconPlant, IconPlant2, IconShoppingBag, IconShoppingCart, IconSun } from '@tabler/icons-react';
-import BottomNavButton from './components/BottomNavButton';
+import { Icon12Hours, Icon24Hours, IconAbacus, IconCalendar, IconCalendarDue, IconCalendarEvent, IconCalendarMonth, IconDashboard, IconForklift, IconNote, IconNotebook, IconNotes, IconPlant, IconPlant2, IconShoppingBag, IconShoppingCart, IconSun } from '@tabler/icons-react';
+import BottomNavButton from './_components/tabs/BottomNavButton';
+import Store from './Notes';
 
 export default function Layout({
   children,
@@ -44,7 +45,7 @@ export default function Layout({
         collapsed: { mobile: !opened },
       }}
       aside={{
-        width: 280,
+        width: 340,
         breakpoint: 'md',
         collapsed: {
           desktop: false,
@@ -89,7 +90,9 @@ export default function Layout({
         {children}
       </AppShell.Main>
 
-      <AppShell.Aside p="md">Aside</AppShell.Aside>
+      <AppShell.Aside p="md">
+        <Store />
+      </AppShell.Aside>
       <AppShell.Footer>
         <Flex className='h-full w-full justify-evenly items-center'>
           <BottomNavButton
@@ -111,10 +114,18 @@ export default function Layout({
           </BottomNavButton>
           <Divider orientation="vertical" my='md' />
           <BottomNavButton
-            title="Purchase"
+            title="Calendar"
           >
-            <IconShoppingCart />
+            <IconCalendarEvent />
           </BottomNavButton>
+          <Divider orientation="vertical" my='md' hiddenFrom='md' />
+          <div className='mantine-hidden-from-md'>
+            <BottomNavButton
+              title="Notes"
+            >
+              <IconNotebook />
+            </BottomNavButton>
+          </div>
         </Flex>
       </AppShell.Footer >
     </AppShell >

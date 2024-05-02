@@ -1,6 +1,6 @@
 import { Flex, Text, UnstyledButton } from "@mantine/core"
 import { FC } from "react"
-import useSearchParamsPush from "@/hooks/useSearchParamsPush"
+import useSearchParamsPush from "@/_hooks/useSearchParamsPush"
 
 export type BottomNavButtonProps = {
   title: string

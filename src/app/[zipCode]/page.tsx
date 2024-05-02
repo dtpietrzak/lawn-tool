@@ -8,17 +8,19 @@ import { testData } from "@/__tests__/testWeatherData"
 
 import { useLocalStorage } from "@mantine/hooks"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import useSearchParamsPush from "../../hooks/useSearchParamsPush"
-import Overview from "./tabs/Overview"
-import VerifyWeatherData from "./components/VerifyWeatherData"
-import Forecast from "./tabs/Forecast"
-import Lawn from "./tabs/Lawn"
-import { formatDate } from "@/tools/formatters"
-import { CurrentProperties, DateDataObject } from "./tabs/types"
-import { getDailyGdd, getF } from "@/tools/formulae"
-import { DeepSetter } from "@/tools/utils"
+import useSearchParamsPush from "../../_hooks/useSearchParamsPush"
+import { formatDate } from "@/_tools/formatters"
+import { getDailyGdd, getF } from "@/_tools/formulae"
+import { DeepSetter } from "@/_tools/utils"
 import { notifications } from "@mantine/notifications"
 import { IconX } from "@tabler/icons-react"
+import { CurrentProperties, DateDataObject } from "./types"
+import VerifyWeatherData from "./_components/VerifyWeatherData"
+import Forecast from "./Forecast"
+import Overview from "./Overview"
+import Lawn from "./Lawn"
+import Calendar from "./Calendar"
+import Notes from "./Notes"
 
 let failedRequest = false
 
@@ -216,8 +218,11 @@ export default function Home() {
           <Tabs.Panel value="lawn">
             <Lawn weatherData={weatherData} />
           </Tabs.Panel>
-          <Tabs.Panel value="purchase">
-            Coming soon...
+          <Tabs.Panel value="calendar">
+            <Calendar weatherData={weatherData} />
+          </Tabs.Panel>
+          <Tabs.Panel value="notes">
+            <Notes />
           </Tabs.Panel>
         </Tabs>
         <div className="h-[512px] w-full" />

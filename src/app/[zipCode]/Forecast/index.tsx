@@ -1,13 +1,13 @@
-import { getF } from "@/tools/formulae";
-import { formatDate } from "@/tools/formatters"
+import { getF } from "@/_tools/formulae";
+import { formatDate } from "@/_tools/formatters"
 import { GetWeatherData } from "@/app/api/tools/requests";
 import { Stack, Title, Card, Flex, Text } from "@mantine/core";
 import { IconSun, IconMoon, IconDroplet } from "@tabler/icons-react";
 import { FC } from "react";
-import TabContainer from "../components/TabContainer";
-import TabTitle from "../components/TabTitle";
+import TabContainer from "../_components/tabs/TabContainer";
+import TabTitle from "../_components/tabs/TabTitle";
 import { WeeklyData } from "../types";
-import IconAndText from "../components/IconAndText";
+import IconAndText from "../_components/IconAndText";
 
 export type ForecastProps = {
   weatherData: GetWeatherData
@@ -22,9 +22,10 @@ const Forecast: FC<ForecastProps> = ({
 
   return (
     <TabContainer>
-      <TabTitle>
-        {`${weatherData.location} - Forecast`}
-      </TabTitle>
+      <TabTitle
+        primary='Forecast'
+        secondary={weatherData.location}
+      />
       <Card
         shadow="sm"
         padding="md"

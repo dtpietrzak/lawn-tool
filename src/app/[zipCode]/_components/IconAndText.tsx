@@ -1,4 +1,4 @@
-import { getF } from "@/tools/formulae"
+import { getF } from "@/_tools/formulae"
 import { Flex, Text } from "@mantine/core"
 import { IconMoon, IconSun } from "@tabler/icons-react"
 import { Component, FC } from "react"
