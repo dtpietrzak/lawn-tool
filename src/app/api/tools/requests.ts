@@ -72,13 +72,11 @@ const getTomorrowIoData = async (zip_code: string) => {
 
 export const getWeatherData = async (zip_code: string) => {
   const place = await getLatLongByZip(zip_code)
-  if (!place) return {
-    location: undefined,
-    noaa: undefined,
-    tomorrowIo: undefined,
-  }
+  if (!place) throw Error('No location')
   const noaa_data = await getNoaaData(place.lat, place.lon)
+  if (!noaa_data) throw Error('No NOAA')
   const tomorrow_io_data = await getTomorrowIoData(zip_code)
+  if (!tomorrow_io_data) throw Error('No Tomorrow IO')
   return {
     location: place.location,
     noaa: noaa_data,

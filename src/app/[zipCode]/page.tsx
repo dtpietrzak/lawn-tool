@@ -56,11 +56,7 @@ export default function Home() {
   })
 
   const transformedData = useMemo(() => {
-    if (
-      !weatherData ||
-      !weatherData.noaa ||
-      !weatherData.noaa.forecast
-    ) {
+    if (!weatherData) {
       if (!failedRequest) {
         failedRequest = true
         notifications.show(notificationOptions)

@@ -52,7 +52,7 @@ const Lawn: FC<LawnProps> = ({
                     <IconMoon color="cyan" />
                 }
                 <Text size='lg'>
-                  {getF(period.temperature.value) ?? "?"}
+                  {getF(period.temperature.value ?? 0) ?? "?"}
                 </Text>
               </Flex>
               <Flex>

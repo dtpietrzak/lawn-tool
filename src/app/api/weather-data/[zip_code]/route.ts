@@ -25,12 +25,34 @@ export async function GET(
   }
   try {
     const weather_data = await getWeatherData(params.params.zip_code)
-    if (!weather_data.location) {
-      return Response.json(null, {
-        status: 404,
-        statusText: 'Bad Request - Zip code not found'
+      .catch((error) => {
+        switch(error) {
+          case 'No location': {
+            return Response.json(null, {
+              status: 404,
+              statusText: 'Not Found - Zip code not found'
+            })
+          }
+          case 'No NOAA': {
+            return Response.json(null, {
+              status: 500,
+              statusText: 'Internal Server Error - NOAA data failed to load'
+            })
+          }
+          case 'No Tomorrow IO': {
+            return Response.json(null, {
+              status: 500,
+              statusText: 'Internal Server Error - Tomorrow IO data failed to load'
+            })
+          }
+          default: {
+            return Response.json(null, {
+              status: 500,
+              statusText: 'Internal Server Error'
+            })
+          }
+        }
       })
-    }
     return Response.json({
       data: weather_data
     })
