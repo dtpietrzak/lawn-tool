@@ -1,19 +1,15 @@
-import { getF } from "@/_tools/formulae";
-import { formatDate } from "@/_tools/formatters"
-import { GetWeatherData } from "@/app/api/tools/requests";
-import { Stack, Title, Card, Flex, Text } from "@mantine/core";
-import { IconSun, IconMoon, IconDroplet } from "@tabler/icons-react";
+import { Text } from "@mantine/core";
 import { FC } from "react";
 import TabTitle from "../_components/tabs/TabTitle";
 import TabContainer from "../_components/tabs/TabContainer";
+import useWeatherData from "@/_hooks/useWeatherData";
 
 export type LawnProps = {
-  weatherData: GetWeatherData
 }
 
-const Lawn: FC<LawnProps> = ({
-  weatherData,
-}) => {
+const Lawn: FC<LawnProps> = () => {
+  const { weatherData } = useWeatherData()
+
   return (
     <TabContainer>
       <TabTitle

@@ -1,39 +1,35 @@
-'use client'
-
-import { useEffect, useState } from "react"
-import { useRouter } from 'next/navigation'
-import ZipCodeSearch from '@/app/[zipCode]/_components/navbar/ZipCodeSearch'
-import { Text } from "@mantine/core"
-import { useLocalStorage } from "@mantine/hooks"
+import { Button, Center, Flex, Space, Title } from "@mantine/core"
 
 export default function Home() {
-  const router = useRouter()
-
-  const [zipCode, setZipCode] = useLocalStorage<string>({
-    key: 'default-zip-code',
-    defaultValue: '',
-  })
-
-  const [_zipCode, _setZipCode] = useState('')
-
-  useEffect(() => {
-    if (zipCode) router.push(`/${zipCode}`)
-  }, [router, zipCode])
-
-  const handleWeatherDataUpdate = (zip_code: string) => {
-    setZipCode(zip_code)
-  }
-
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between">
-      <ZipCodeSearch
-        zipCode={_zipCode}
-        onZipCodeChange={(zip_code) => _setZipCode(zip_code)}
-        onZipCodeSubmit={(zip_code) => handleWeatherDataUpdate(zip_code)}
-      />
-      <Text>
-        Search your zip code
-      </Text>
+    <main className="flex min-h-screen flex-col items-center justify-center gap-2">
+      <Title size="h1">
+        Lawn Tool
+      </Title>
+      <Space />
+      <Flex gap="sm">
+        <Button
+          component="a"
+          href="/sign-in"
+          variant="light"
+        >
+          Sign In
+        </Button>
+        <Button
+          component="a"
+          href="/sign-up"
+        >
+          Sign Up
+        </Button>
+      </Flex>
+      <Button
+        component="a"
+        href="/46350?tab=overview&demo=true"
+        variant="subtle"
+        color="yellow"
+      >
+        Demo
+      </Button>
     </main>
   )
 }

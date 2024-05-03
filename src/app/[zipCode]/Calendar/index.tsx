@@ -2,16 +2,15 @@ import { FC } from "react";
 import TabContainer from "../_components/tabs/TabContainer";
 import TabTitle from "../_components/tabs/TabTitle";
 import { Text } from '@mantine/core'
-import { GetWeatherData } from "@/app/api/tools/requests";
 import EditText from "../_components/EditText";
+import useWeatherData from "@/_hooks/useWeatherData";
 
 export type CalendarProps = {
-  weatherData: GetWeatherData
 }
 
-const Calendar: FC<CalendarProps> = ({
-  weatherData,
-}) => {
+const Calendar: FC<CalendarProps> = () => {
+  const { weatherData } = useWeatherData()
+
   return (
     <TabContainer>
       <TabTitle

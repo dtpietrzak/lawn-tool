@@ -1,24 +1,18 @@
 import { getF } from "@/_tools/formulae";
 import { formatDate } from "@/_tools/formatters"
-import { GetWeatherData } from "@/app/api/tools/requests";
-import { Stack, Title, Card, Flex, Text } from "@mantine/core";
+import { Card, Flex, Text } from "@mantine/core";
 import { IconSun, IconMoon, IconDroplet } from "@tabler/icons-react";
 import { FC } from "react";
 import TabContainer from "../_components/tabs/TabContainer";
 import TabTitle from "../_components/tabs/TabTitle";
-import { WeeklyData } from "../types";
 import IconAndText from "../_components/IconAndText";
+import useWeatherData from "@/_hooks/useWeatherData";
 
 export type ForecastProps = {
-  weatherData: GetWeatherData
-  weeklyData: WeeklyData
 }
 
-const Forecast: FC<ForecastProps> = ({
-  weatherData,
-  weeklyData,
-}) => {
-
+const Forecast: FC<ForecastProps> = () => {
+  const { weatherData, transformedData } = useWeatherData()
 
   return (
     <TabContainer>
@@ -34,9 +28,12 @@ const Forecast: FC<ForecastProps> = ({
         w="100%"
         maw="500"
       >
-        <Text>
-          Temperature Delta: {weeklyData.temp.delta}º
-        </Text>
+        {
+          transformedData?.weeklyData &&
+          <Text>
+            Temperature Delta: {transformedData.weeklyData.temp.delta}º
+          </Text>
+        }
       </Card>
       {
         (weatherData.noaa?.forecast?.periods ?? []).map((period) => (
