@@ -83,6 +83,6 @@ export const getWeatherData = async (zip_code: string) => {
     tomorrowIo: tomorrow_io_data,
   }
 }
-export type GetWeatherData = Awaited<ReturnType<typeof getWeatherData>>
+export type WeatherData = Awaited<ReturnType<typeof getWeatherData>>
 
 

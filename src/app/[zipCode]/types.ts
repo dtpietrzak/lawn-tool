@@ -1,6 +1,6 @@
-import { GetWeatherData } from "@/app/api/tools/requests";
+import { WeatherData } from "@/app/api/tools/requests";
 
-export type NoaaPeriod = GetWeatherData['noaa']['forecast']['periods'][0]
+export type NoaaPeriod = WeatherData['noaa']['forecast']['periods'][0]
 
 export type DateDataObject = Record<string, {
   noaa: {
@@ -39,7 +39,7 @@ export type WeeklyData = {
     max: number
     delta: number
   }
-}
+} | undefined
 
 export type CurrentProperties = {
   height: number

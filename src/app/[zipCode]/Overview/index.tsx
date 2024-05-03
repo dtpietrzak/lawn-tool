@@ -1,31 +1,35 @@
-import { getDailyGdd, getF } from "@/_tools/formulae";
 import { formatDate } from "@/_tools/formatters"
-import { GetWeatherData } from "@/app/api/tools/requests";
 import { Card, Flex, Text, Progress } from "@mantine/core";
-import { IconDroplet, IconPlant, IconPlantOff } from "@tabler/icons-react";
+import { IconDroplet } from "@tabler/icons-react";
 import { FC } from "react";
 import TabContainer from "../_components/tabs/TabContainer";
 import TabTitle from "../_components/tabs/TabTitle";
 import Temperature from "./_components/Temperature";
 import GrowingDegreeDays from "./_components/GrowingDegreeDays";
 import IconAndText from "../_components/IconAndText";
-import { CurrentProperties, DateDataArray, WeeklyData } from "../types";
+import { CurrentProperties } from "../types";
 import EditText from "../_components/EditText";
 import { isValidAmount } from "@/_tools/utils";
+import useWeatherData from "@/_hooks/useWeatherData";
+import { useLocalStorage } from "@mantine/hooks";
+import { useParams } from "next/navigation";
 
 export type OverviewProps = {
-  weatherData: GetWeatherData
-  dataByDateArray: DateDataArray
-  grassData: CurrentProperties
-  updateGrassData: (value: CurrentProperties) => void
 }
 
-const Overview: FC<OverviewProps> = ({
-  weatherData,
-  dataByDateArray,
-  grassData,
-  updateGrassData,
-}) => {
+const Overview: FC<OverviewProps> = () => {
+  const params = useParams<{ zipCode: string }>()
+  
+  const { weatherData, transformedData } = useWeatherData()
+
+  const [grassData, setGrassData] = useLocalStorage<CurrentProperties>({
+    key: `grass-data-${params.zipCode}`,
+    defaultValue: {
+      height: 0,
+      water: 0,
+    },
+  })
+
   return (
     <TabContainer>
       <TabTitle
@@ -50,7 +54,7 @@ const Overview: FC<OverviewProps> = ({
             value={grassData.height.toFixed(2)}
             onSave={(value) => {
               if (isValidAmount(value)) {
-                updateGrassData({
+                setGrassData({
                   ...grassData,
                   height: parseInt(value),
                 })
@@ -60,7 +64,7 @@ const Overview: FC<OverviewProps> = ({
         </Flex>
       </Card>
       {
-        dataByDateArray.map((data) => {
+        transformedData.dataByDateArray.map((data) => {
           if (data.noaa.day && data.noaa.night) {
             const day = data.noaa.day
             const night = data.noaa.night
@@ -79,7 +83,6 @@ const Overview: FC<OverviewProps> = ({
                   <Flex justify="space-between">
                     <Text
                       size='sm'
-                      c="dimmed"
                     >
                       {day.name}
                     </Text>
@@ -141,6 +144,28 @@ const Overview: FC<OverviewProps> = ({
                       />
                     </Progress.Root>
                   </div>
+                </Flex>
+                <Flex direction="column" gap="xs" mt="xs">
+                  <Flex direction="column">
+                    <Text
+                      size='sm'
+                    >
+                      Day
+                    </Text>
+                    <Text size='xs' c='dimmed'>
+                      {data.noaa.day.detailedForecast}
+                    </Text>
+                  </Flex>
+                  <Flex direction="column">
+                    <Text
+                      size='sm'
+                    >
+                      Night
+                    </Text>
+                    <Text size='xs' c='dimmed'>
+                      {data.noaa.night.detailedForecast}
+                    </Text>
+                  </Flex>
                 </Flex>
               </Card>
             )

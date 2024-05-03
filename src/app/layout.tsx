@@ -13,6 +13,9 @@ import { Inter } from 'next/font/google'
 import { MantineProvider, ColorSchemeScript } from '@mantine/core';
 import { theme } from './theme';
 import { Notifications } from '@mantine/notifications';
+import { ClerkProvider } from '@clerk/nextjs'
+import { UserDataProvider } from '@/_hooks/useUserData';
+import { LawnDataProvider } from '@/_hooks/useLawnData';
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -27,25 +30,31 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <head>
-        <meta charSet="UTF-8" />
-        <meta
-          name="viewport"
-          content="minimum-scale=1, initial-scale=1, width=device-width, user-scalable=no"
-        />
-        <title>Lawn Tool</title>
-        <ColorSchemeScript />
-      </head>
-      <body className={inter.className}>
-        <MantineProvider
-          theme={theme}
-          defaultColorScheme="dark"
-        >
-          <Notifications />
-          {children}
-        </MantineProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <UserDataProvider>
+        <LawnDataProvider>
+          <html lang="en">
+            <head>
+              <meta charSet="UTF-8" />
+              <meta
+                name="viewport"
+                content="minimum-scale=1, initial-scale=1, width=device-width, user-scalable=no"
+              />
+              <title>Lawn Tool</title>
+              <ColorSchemeScript />
+            </head>
+            <body className={inter.className}>
+              <MantineProvider
+                theme={theme}
+                defaultColorScheme="dark"
+              >
+                <Notifications />
+                {children}
+              </MantineProvider>
+            </body>
+          </html>
+        </LawnDataProvider>
+      </UserDataProvider>
+    </ClerkProvider>
   )
 }
