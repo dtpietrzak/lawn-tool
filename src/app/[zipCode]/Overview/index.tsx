@@ -7,7 +7,7 @@ import TabTitle from "../_components/tabs/TabTitle";
 import Temperature from "./_components/Temperature";
 import GrowingDegreeDays from "./_components/GrowingDegreeDays";
 import IconAndText from "../_components/IconAndText";
-import { CurrentProperties } from "../types";
+import { CurrentProperties, UrlParams } from "../types";
 import EditText from "../_components/EditText";
 import { isValidAmount } from "@/_tools/utils";
 import useWeatherData from "@/_hooks/useWeatherData";
@@ -18,7 +18,7 @@ export type OverviewProps = {
 }
 
 const Overview: FC<OverviewProps> = () => {
-  const params = useParams<{ zipCode: string }>()
+  const params = useParams<UrlParams>()
   
   const { weatherData, transformedData } = useWeatherData()
 

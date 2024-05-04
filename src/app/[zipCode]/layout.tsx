@@ -1,38 +1,58 @@
 'use client'
 
-import { AppShell, Burger, Flex, SimpleGrid, Title, Text, rem, Box, Divider } from '@mantine/core';
+import { AppShell, Burger, Flex, Title, Text, rem, Divider, LoadingOverlay, Avatar } from '@mantine/core';
 import { useDisclosure, useHeadroom, useWindowScroll } from '@mantine/hooks';
 import ZipCodeSearch from './_components/navbar/ZipCodeSearch';
-import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { Icon12Hours, Icon24Hours, IconAbacus, IconCalendar, IconCalendarDue, IconCalendarEvent, IconCalendarMonth, IconDashboard, IconForklift, IconNote, IconNotebook, IconNotes, IconPlant, IconPlant2, IconShoppingBag, IconShoppingCart, IconSun } from '@tabler/icons-react';
+import { useEffect, useState } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { IconCalendarEvent, IconDashboard, IconNotebook, IconPlant2, IconSun, IconX } from '@tabler/icons-react';
 import BottomNavButton from './_components/tabs/BottomNavButton';
 import Store from './Notes';
+import useUserData from '@/_hooks/useUserData';
+import { UrlParams } from './types';
+
+const topNavHeight = 50
 
 export default function Layout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const params = useParams<{ zipCode: string }>()
+  const params = useParams<UrlParams>()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const pinned = useHeadroom({ fixedAt: 120 })
   const [scroll] = useWindowScroll()
 
-  const [zipCode, setZipCode] = useState<string>(params.zipCode)
+  const { auth } = useUserData()
 
+  const [zipCode, setZipCode] = useState<string>(params?.zipCode ?? '')
   const [opened, { toggle }] = useDisclosure();
 
   const handleZipCodeSubmitted = (zip_code: string) => {
     router.push(`/${zip_code}`)
   }
 
+  useEffect(() => {
+    if (
+      auth.isLoaded &&
+      !auth.isSignedIn &&
+      searchParams.get('demo') !== "true"
+    ) {
+      router.push('/')
+    }
+  }, [auth.isLoaded, auth.isSignedIn, router, searchParams])
+
+  if (!auth.isLoaded) return (
+    <LoadingOverlay />
+  )
+
   return (
     <AppShell
       layout='alt'
       header={{
-        height: 50,
-        collapsed: !(pinned && scroll.y <= 50),
+        height: topNavHeight,
+        collapsed: !(pinned && scroll.y <= topNavHeight),
         offset: false,
       }}
       footer={{
@@ -74,15 +94,26 @@ export default function Layout({
               Lawn Tool
             </Title>
           </Flex>
-          <ZipCodeSearch
-            zipCode={zipCode}
-            onZipCodeChange={(zipCode) => setZipCode(zipCode)}
-            onZipCodeSubmit={(zipCode) => handleZipCodeSubmitted(zipCode)}
-          />
+          <Flex align="center" gap="xs">
+            <Text c='dimmed' size='xs'>
+              {auth.user?.primaryEmailAddress?.emailAddress}
+            </Text>
+            <Avatar />
+          </Flex>
         </Flex>
       </AppShell.Header>
 
-      <AppShell.Navbar p="md">Navbar</AppShell.Navbar>
+      <AppShell.Navbar p="md">
+        <Flex h={topNavHeight} justify="flex-end" hiddenFrom='sm'>
+          <IconX onClick={toggle} />
+        </Flex>
+        Search:
+        <ZipCodeSearch
+          zipCode={zipCode}
+          onZipCodeChange={(zipCode) => setZipCode(zipCode)}
+          onZipCodeSubmit={(zipCode) => handleZipCodeSubmitted(zipCode)}
+        />
+      </AppShell.Navbar>
 
       <AppShell.Main
         pt={`calc(${rem(50)} + var(--mantine-spacing-md))`}

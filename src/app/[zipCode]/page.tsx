@@ -3,9 +3,8 @@
 import { useParams } from "next/navigation"
 import { Tabs } from "@mantine/core"
 
-import { useLocalStorage } from "@mantine/hooks"
 import useSearchParamsPush from "../../_hooks/useSearchParamsPush"
-import { CurrentProperties } from "./types"
+import { UrlParams } from "./types"
 import Forecast from "./Forecast"
 import Overview from "./Overview"
 import Lawn from "./Lawn"
@@ -15,7 +14,7 @@ import { WeatherDataProvider } from "@/_hooks/useWeatherData"
 
 
 export default function Home() {
-  const params = useParams<{ zipCode: string }>()
+  const params = useParams<UrlParams>()
   const { searchParams } = useSearchParamsPush()
 
   return (

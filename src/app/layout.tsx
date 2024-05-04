@@ -13,9 +13,7 @@ import { Inter } from 'next/font/google'
 import { MantineProvider, ColorSchemeScript } from '@mantine/core';
 import { theme } from './theme';
 import { Notifications } from '@mantine/notifications';
-import { ClerkProvider } from '@clerk/nextjs'
-import { UserDataProvider } from '@/_hooks/useUserData';
-import { LawnDataProvider } from '@/_hooks/useLawnData';
+import Providers from './Providers';
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -24,37 +22,35 @@ export const metadata: Metadata = {
   description: 'Weather app for lawn nuts',
 }
 
+
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
-    <ClerkProvider>
-      <UserDataProvider>
-        <LawnDataProvider>
-          <html lang="en">
-            <head>
-              <meta charSet="UTF-8" />
-              <meta
-                name="viewport"
-                content="minimum-scale=1, initial-scale=1, width=device-width, user-scalable=no"
-              />
-              <title>Lawn Tool</title>
-              <ColorSchemeScript />
-            </head>
-            <body className={inter.className}>
-              <MantineProvider
-                theme={theme}
-                defaultColorScheme="dark"
-              >
-                <Notifications />
-                {children}
-              </MantineProvider>
-            </body>
-          </html>
-        </LawnDataProvider>
-      </UserDataProvider>
-    </ClerkProvider>
+    <Providers>
+      <html lang="en">
+        <head>
+          <meta charSet="UTF-8" />
+          <meta
+            name="viewport"
+            content="minimum-scale=1, initial-scale=1, width=device-width, user-scalable=no"
+          />
+          <title>Lawn Tool</title>
+          <ColorSchemeScript />
+        </head>
+        <body className={inter.className}>
+          <MantineProvider
+            theme={theme}
+            defaultColorScheme="dark"
+          >
+            <Notifications />
+            {children}
+          </MantineProvider>
+        </body>
+      </html>
+    </Providers>
   )
 }
