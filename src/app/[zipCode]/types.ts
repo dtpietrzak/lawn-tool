@@ -45,3 +45,10 @@ export type CurrentProperties = {
   height: number
   water: number
 }
+
+export type Tab = 'overview' | 'forecast' | 'lawn' | 'calendar' | 'notes'
+
+export type UrlParams = {
+  zipCode?: string,
+}
+

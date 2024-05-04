@@ -1,22 +1,29 @@
 'use client'
 
+import { useUser } from '@clerk/nextjs'
 import { FC, createContext, useContext } from 'react'
 
 export type UserData = {
-  id: string,
   tabOptions: {
     forecast: {
-      temps: boolean,
-      date: boolean,
-      growth: boolean,
-      rainChance: boolean,
-      descriptions: boolean,
+      temps: boolean
+      date: boolean
+      growth: boolean
+      rainChance: boolean
+      descriptions: boolean
     }
   }
 }
 
+export type UserContext = {
+  id: string
+  auth: ReturnType<typeof useUser>
+  userData: UserData
+  setUserData: (userData: UserData) => UserData
+  updateUserData: (userData: UserData) => UserData
+}
+
 const defaultUserData: UserData = {
-  id: '',
   tabOptions: {
     forecast: {
       temps: true,
@@ -28,13 +35,19 @@ const defaultUserData: UserData = {
   }
 }
 
-export const defaultContext = {
+const defaultUserContext: UserContext = {
+  id: '',
+  auth: {
+    isLoaded: false,
+    isSignedIn: undefined,
+    user: undefined,
+  },
   userData: defaultUserData,
-  setUserData: (userData: UserData) => userData,
-  updateUserData: (userData: UserData) => userData,
+  setUserData: () => defaultUserData,
+  updateUserData: () => defaultUserData,
 }
 
-export const UserDataContext = createContext(defaultContext)
+export const UserDataContext = createContext(defaultUserContext)
 
 export type UserDataProviderProps = {
   children: React.ReactNode
@@ -43,10 +56,18 @@ export type UserDataProviderProps = {
 export const UserDataProvider: FC<UserDataProviderProps> = ({
   children,
 }) => {
+  const auth = useUser()
 
+  const value: UserContext = {
+    id: auth.user ? auth.user.id : '',
+    auth: auth,
+    userData: defaultUserData,
+    setUserData: defaultUserContext.setUserData,
+    updateUserData: defaultUserContext.updateUserData,
+  }
 
   return (
-    <UserDataContext.Provider value={defaultContext}>
+    <UserDataContext.Provider value={value}>
       {children}
     </UserDataContext.Provider>
   )
