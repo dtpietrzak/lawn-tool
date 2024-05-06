@@ -3,13 +3,14 @@
 import { AppShell, Burger, Flex, Title, Text, rem, Divider, LoadingOverlay, Avatar } from '@mantine/core';
 import { useDisclosure, useHeadroom, useWindowScroll } from '@mantine/hooks';
 import ZipCodeSearch from './_components/navbar/ZipCodeSearch';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { IconCalendarEvent, IconDashboard, IconNotebook, IconPlant2, IconSun, IconX } from '@tabler/icons-react';
 import BottomNavButton from './_components/tabs/BottomNavButton';
 import Store from './Notes';
 import useUserData from '@/_hooks/useUserData';
 import { UrlParams } from './types';
+import useRouteGuard from '@/_hooks/useRouteGuard';
 
 const topNavHeight = 50
 
@@ -26,22 +27,22 @@ export default function Layout({
 
   const { auth } = useUserData()
 
+  useRouteGuard(() => {
+    if (
+      auth.isLoaded &&
+      !auth.isSignedIn &&
+      searchParams.get('demo') !== "true"
+    ) {
+      return '/'
+    }
+  }, [auth.isLoaded, auth.isSignedIn, searchParams])
+
   const [zipCode, setZipCode] = useState<string>(params?.zipCode ?? '')
   const [opened, { toggle }] = useDisclosure();
 
   const handleZipCodeSubmitted = (zip_code: string) => {
     router.push(`/${zip_code}`)
   }
-
-  useEffect(() => {
-    if (
-      auth.isLoaded &&
-      !auth.isSignedIn &&
-      searchParams.get('demo') !== "true"
-    ) {
-      router.push('/')
-    }
-  }, [auth.isLoaded, auth.isSignedIn, router, searchParams])
 
   if (!auth.isLoaded) return (
     <LoadingOverlay />

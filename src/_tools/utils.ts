@@ -59,6 +59,27 @@ export class DeepSetter<T extends NestedObject> {
 }
 
 
+export const getValidatedZip = (zip_code?: string): string | void => {
+  if (zip_code) {
+    if (typeof zip_code !== 'string') return
+    if (/^\d{5}$/.test(zip_code)) return zip_code
+    else return
+  }
+  if (typeof window === 'undefined') return
+  const zipCodeLS = window.localStorage.getItem('default-zipcode')
+  if (zipCodeLS) {
+    try {
+      const parsedZip: string = JSON.parse(zipCodeLS)
+      if (!parsedZip) return
+      if (typeof parsedZip !== 'string') return
+      if (/^\d{5}$/.test(parsedZip)) return parsedZip
+      else return
+    } catch {
+      console.error('zipcode from local storage failed')
+      return
+    }
+  }
+}
 
 
 export const isValidAmount = (amount: number | string) => {
@@ -67,7 +88,7 @@ export const isValidAmount = (amount: number | string) => {
       title: 'No amount entered',
       message: 'Please enter an amount',
       color: 'red',
-      autoClose: 2000,      
+      autoClose: 2000,
     })
     return false
   }

@@ -1,6 +1,23 @@
-import { Button, Center, Flex, Space, Title } from "@mantine/core"
+'use client'
+
+import useRouteGuard from "@/_hooks/useRouteGuard"
+import useUserData from "@/_hooks/useUserData"
+import { Button, Flex, Space, Title } from "@mantine/core"
+import { readLocalStorageValue } from "@mantine/hooks"
 
 export default function Home() {
+  const { auth } = useUserData()
+  const zipCode = readLocalStorageValue({
+    key: 'default-zipcode',
+    defaultValue: '',
+  })
+
+  useRouteGuard(() => {
+    if (auth.isLoaded && auth.isSignedIn && zipCode) {
+      return `/${zipCode}`
+    }
+  }, [auth.isLoaded, auth.isSignedIn, zipCode])
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-2">
       <Title size="h1">

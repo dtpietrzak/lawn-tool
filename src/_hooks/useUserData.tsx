@@ -1,7 +1,9 @@
 'use client'
 
-import { useUser } from '@clerk/nextjs'
-import { FC, createContext, useContext } from 'react'
+import { useClerk, useUser } from '@clerk/nextjs'
+import { FC, createContext, useContext, useEffect } from 'react'
+import { DocumentReference, doc, getFirestore } from 'firebase/firestore';
+import { useFirestoreDocData, useFirestore, useFirebaseApp } from 'reactfire';
 
 export type UserData = {
   tabOptions: {
@@ -17,7 +19,9 @@ export type UserData = {
 
 export type UserContext = {
   id: string
-  auth: ReturnType<typeof useUser>
+  auth: ReturnType<typeof useUser> & {
+    signOut: ReturnType<typeof useClerk>['signOut']
+  }
   userData: UserData
   setUserData: (userData: UserData) => UserData
   updateUserData: (userData: UserData) => UserData
@@ -41,6 +45,7 @@ const defaultUserContext: UserContext = {
     isLoaded: false,
     isSignedIn: undefined,
     user: undefined,
+    signOut: () => new Promise<void>((resolve) => resolve()),
   },
   userData: defaultUserData,
   setUserData: () => defaultUserData,
@@ -57,10 +62,24 @@ export const UserDataProvider: FC<UserDataProviderProps> = ({
   children,
 }) => {
   const auth = useUser()
+  const clerk = useClerk()
+  const userOptionsRef = doc(
+    useFirestore(),
+    'user-options',
+    '3y6xptIQIpJbYq8mjuIS',
+  );
+  const { status, data } = useFirestoreDocData(userOptionsRef);
+
+  useEffect(() => {
+    console.log(data)
+  }, [data])
 
   const value: UserContext = {
     id: auth.user ? auth.user.id : '',
-    auth: auth,
+    auth: {
+      ...auth,
+      signOut: clerk.signOut,
+    },
     userData: defaultUserData,
     setUserData: defaultUserContext.setUserData,
     updateUserData: defaultUserContext.updateUserData,

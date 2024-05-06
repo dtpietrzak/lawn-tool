@@ -10,7 +10,7 @@ export default function Page() {
   const router = useRouter()
 
   const [zipCode, setZipCode] = useLocalStorage<string>({
-    key: 'default-zip-code',
+    key: 'default-zipcode',
     defaultValue: '',
   })
 
