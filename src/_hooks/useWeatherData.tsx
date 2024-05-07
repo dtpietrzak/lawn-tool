@@ -71,7 +71,7 @@ export const WeatherDataProvider: FC<WeatherDataProviderProps> = ({
   const searchParams = useSearchParams()
   const { auth } = useUserData()
 
-  const isDemo = (auth.isLoaded && !auth.isSignedIn) && searchParams.get('demo') === "true"
+  const isDemo = !auth.isLockedAndLoaded && searchParams.get('demo') === "true"
 
   useRouteGuard(async () => {
     if (isDemo) return // don't redirect
@@ -79,7 +79,7 @@ export const WeatherDataProvider: FC<WeatherDataProviderProps> = ({
       await auth.signOut()
       return '/'
     }
-  }, [auth, isDemo, params.zipCode])
+  }, [auth, isDemo, params.zipCode], 'hooks/useWeatherData')
 
   const [weatherData, setWeatherData] = useLocalStorage<WeatherData>({
     key: `weather-data-${params.zipCode}`,

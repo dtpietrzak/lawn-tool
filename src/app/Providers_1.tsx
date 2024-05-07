@@ -2,12 +2,13 @@
 
 import { FC } from "react"
 import { FirebaseAppProvider } from "reactfire"
+import { FirebaseOptions } from "firebase/app"
 
 export type ProvidersProps = {
   children: React.ReactNode
 }
 
-const firebaseConfig = {
+const firebaseConfig: FirebaseOptions = {
   apiKey: "AIzaSyAzofD9gEdSR4BMTFCj78vaRalDSPMxUzU",
   authDomain: "lawn-tool.firebaseapp.com",
   projectId: "lawn-tool",
@@ -20,7 +21,10 @@ const Providers_1: FC<ProvidersProps> = ({
   children,
 }) => {
   return (
-    <FirebaseAppProvider firebaseConfig={firebaseConfig}>
+    <FirebaseAppProvider 
+      firebaseConfig={firebaseConfig}
+      appName="Lawn-Tool"
+    >
       {children}
     </FirebaseAppProvider >
   )

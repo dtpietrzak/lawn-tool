@@ -17,6 +17,7 @@ export const useRouteGuard = (
     | (() => RouteGuardReturns)
     | (() => Promise<RouteGuardReturns>),
   dependencies: unknown[],
+  debugId: string,
 ) => {
   const router = useRouter()
 
@@ -24,14 +25,18 @@ export const useRouteGuard = (
     const shouldRedirect = await routeGuard()
     if (shouldRedirect) {
       if (typeof shouldRedirect === 'string') {
-        if (isDev) console.log('routeGaurd routing to: ', shouldRedirect)
+        if (isDev) console.log(
+          `routeGaurd ${debugId} routing to: ${shouldRedirect}`
+        )
         router.push(shouldRedirect)
       } else {
-        if (isDev) console.log('routeGaurd routing to: ', shouldRedirect.route)
+        if (isDev) console.log(
+          `routeGaurd ${debugId} routing to: ${shouldRedirect.route}`
+        )
         router.push(shouldRedirect.route, shouldRedirect.options)
       }
     }
-  }, [routeGuard, router])
+  }, [debugId, routeGuard, router])
 
   useEffect(() => {
     routeGuardFunction()

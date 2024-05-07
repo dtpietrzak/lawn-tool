@@ -1,9 +1,87 @@
 'use client'
 
-import { useClerk, useUser } from '@clerk/nextjs'
-import { FC, createContext, useContext, useEffect } from 'react'
-import { DocumentReference, doc, getFirestore } from 'firebase/firestore';
-import { useFirestoreDocData, useFirestore, useFirebaseApp } from 'reactfire';
+import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/nextjs'
+import { FC, createContext, useCallback, useContext, useEffect } from 'react'
+import { useFirestoreDocData, useAuth as useFirebaseAuth, useDatabase, useDatabaseObjectData, useFirestore } from 'reactfire'
+import { signInWithCustomToken, updateEmail } from 'firebase/auth'
+import { ref, get, set } from 'firebase/database'
+import { doc } from 'firebase/firestore'
+
+export type Auth = {
+  email: string
+  clerkAuth: ReturnType<typeof useClerkAuth> | null
+  firebaseAuth: ReturnType<typeof useFirebaseAuth> | null
+  signOut: () => Promise<void>
+  isLockedAndLoaded: boolean
+}
+
+export type UserDataProviderProps = {
+  children: React.ReactNode
+}
+
+export const UserDataProvider: FC<UserDataProviderProps> = ({
+  children,
+}) => {
+  const clerkAuth = useClerkAuth()
+  const clerkUser = useClerkUser()
+  const firebaseAuth = useFirebaseAuth()
+  const database = useDatabase()
+  const firestore = useFirestore()
+
+  const primaryEmail = clerkUser.user?.primaryEmailAddress?.emailAddress
+
+  const syncAuthWithFirebase = useCallback(async () => {
+    const token = await clerkAuth.getToken({ template: 'integration_firebase' })
+    const userCredentials = await signInWithCustomToken(firebaseAuth, token || '')
+
+    if (primaryEmail && userCredentials.user.email !== primaryEmail) {
+      await updateEmail(userCredentials.user, primaryEmail)
+    }
+
+    const databaseRef = ref(database, `users/${userCredentials.user.uid}`)
+    const snapshot = await get(databaseRef)
+    if (!snapshot.exists()) {
+      set(databaseRef, defaultUserData)
+    }
+
+    // const firestoreDoc = doc(firestore, `lawns/${userCredentials.user.uid}`)
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clerkAuth.userId])
+
+  useEffect(() => {
+    if (clerkAuth.isLoaded && clerkAuth.isSignedIn) {
+      syncAuthWithFirebase()
+    }
+  }, [clerkAuth.isLoaded, clerkAuth.isSignedIn, syncAuthWithFirebase])
+
+  const auth: Auth = {
+    email: clerkUser.user?.primaryEmailAddress?.emailAddress || '',
+    clerkAuth: clerkAuth,
+    firebaseAuth: firebaseAuth,
+    signOut: async () => {
+      await clerkAuth.signOut()
+      await firebaseAuth.signOut()
+    },
+    isLockedAndLoaded: Boolean(
+      clerkAuth.isLoaded &&
+      clerkAuth.isSignedIn &&
+      firebaseAuth?.currentUser?.uid
+    )
+  }
+
+  if (auth.isLockedAndLoaded) {
+    return (
+      <UserDataLoader
+        auth={auth}
+      >
+        {children}
+      </UserDataLoader>
+    )
+  }
+
+  return children
+}
 
 export type UserData = {
   tabOptions: {
@@ -17,11 +95,10 @@ export type UserData = {
   }
 }
 
-export type UserContext = {
+export type UserDataContext = {
   id: string
-  auth: ReturnType<typeof useUser> & {
-    signOut: ReturnType<typeof useClerk>['signOut']
-  }
+  auth: Auth
+  userDataStatus: ReturnType<typeof useFirestoreDocData>['status']
   userData: UserData
   setUserData: (userData: UserData) => UserData
   updateUserData: (userData: UserData) => UserData
@@ -39,59 +116,70 @@ const defaultUserData: UserData = {
   }
 }
 
-const defaultUserContext: UserContext = {
+const defaultUserContext: UserDataContext = {
   id: '',
   auth: {
-    isLoaded: false,
-    isSignedIn: undefined,
-    user: undefined,
-    signOut: () => new Promise<void>((resolve) => resolve()),
+    email: '',
+    clerkAuth: null,
+    firebaseAuth: null,
+    signOut: () => new Promise((resolve) => {
+      console.error('Attempting signOut, but user is not logged in!')
+      resolve()
+    }),
+    isLockedAndLoaded: false,
   },
+  userDataStatus: 'loading',
   userData: defaultUserData,
-  setUserData: () => defaultUserData,
-  updateUserData: () => defaultUserData,
+  setUserData: () => {
+    console.error('Attempting setUserData, but user data is not ready yet!')
+    return defaultUserData
+  },
+  updateUserData: () => {
+    console.error('Attempting updateUserData, but user data is not ready yet!')
+    return defaultUserData
+  },
 }
 
-export const UserDataContext = createContext(defaultUserContext)
+export const userDataContext = createContext(defaultUserContext)
 
-export type UserDataProviderProps = {
-  children: React.ReactNode
+export type UserDataLoaderProps = {
+  auth: Auth,
+  children: React.ReactNode,
 }
 
-export const UserDataProvider: FC<UserDataProviderProps> = ({
+const UserDataLoader: FC<UserDataLoaderProps> = ({
+  auth,
   children,
 }) => {
-  const auth = useUser()
-  const clerk = useClerk()
-  const userOptionsRef = doc(
-    useFirestore(),
-    'user-options',
-    '3y6xptIQIpJbYq8mjuIS',
-  );
-  const { status, data } = useFirestoreDocData(userOptionsRef);
+  const database = useDatabase()
 
-  useEffect(() => {
-    console.log(data)
-  }, [data])
+  const userDataRef = ref(
+    database,
+    // we ensure this exists before loading this provider
+    `users/${auth.firebaseAuth!.currentUser!.uid!}`,
+  )
 
-  const value: UserContext = {
-    id: auth.user ? auth.user.id : '',
-    auth: {
-      ...auth,
-      signOut: clerk.signOut,
-    },
-    userData: defaultUserData,
+  const { status, data } = useDatabaseObjectData(userDataRef, {
+    idField: 'id',
+    initialData: defaultUserData,
+  });
+
+  const value: UserDataContext = {
+    id: auth.firebaseAuth?.currentUser?.uid ?? '',
+    auth: auth,
+    userDataStatus: status,
+    userData: (data as UserData) ?? defaultUserData,
     setUserData: defaultUserContext.setUserData,
     updateUserData: defaultUserContext.updateUserData,
   }
 
   return (
-    <UserDataContext.Provider value={value}>
+    <userDataContext.Provider value={value}>
       {children}
-    </UserDataContext.Provider>
+    </userDataContext.Provider>
   )
 }
 
-export const useUserData = () => useContext(UserDataContext)
+export const useUserData = () => useContext(userDataContext)
 
 export default useUserData

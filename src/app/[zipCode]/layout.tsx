@@ -11,6 +11,7 @@ import Store from './Notes';
 import useUserData from '@/_hooks/useUserData';
 import { UrlParams } from './types';
 import useRouteGuard from '@/_hooks/useRouteGuard';
+import { UserButton } from '@clerk/nextjs'
 
 const topNavHeight = 50
 
@@ -29,13 +30,15 @@ export default function Layout({
 
   useRouteGuard(() => {
     if (
-      auth.isLoaded &&
-      !auth.isSignedIn &&
+      (
+        auth.clerkAuth?.isLoaded &&
+        !auth.clerkAuth?.isSignedIn
+      ) &&
       searchParams.get('demo') !== "true"
     ) {
       return '/'
     }
-  }, [auth.isLoaded, auth.isSignedIn, searchParams])
+  }, [auth.clerkAuth?.isLoaded, auth.clerkAuth?.isSignedIn, searchParams], 'app/zipcode/layout')
 
   const [zipCode, setZipCode] = useState<string>(params?.zipCode ?? '')
   const [opened, { toggle }] = useDisclosure();
@@ -44,7 +47,7 @@ export default function Layout({
     router.push(`/${zip_code}`)
   }
 
-  if (!auth.isLoaded) return (
+  if (!auth.isLockedAndLoaded) return (
     <LoadingOverlay />
   )
 
@@ -85,7 +88,7 @@ export default function Layout({
               size="sm"
             />
             <Title
-              size="h2"
+              size="h5"
               c="dimmed"
               ml={{
                 sm: 'lg',
@@ -97,9 +100,9 @@ export default function Layout({
           </Flex>
           <Flex align="center" gap="xs">
             <Text c='dimmed' size='xs'>
-              {auth.user?.primaryEmailAddress?.emailAddress}
+              {auth.email}
             </Text>
-            <Avatar />
+            <UserButton afterSignOutUrl='/sign-out' />
           </Flex>
         </Flex>
       </AppShell.Header>

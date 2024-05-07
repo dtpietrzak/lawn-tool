@@ -13,10 +13,14 @@ export default function Home() {
   })
 
   useRouteGuard(() => {
-    if (auth.isLoaded && auth.isSignedIn && zipCode) {
-      return `/${zipCode}`
+    if (auth.isLockedAndLoaded) {
+      if (zipCode) {
+        return `/${zipCode}`
+      } else {
+        return '/new-lawn'
+      }
     }
-  }, [auth.isLoaded, auth.isSignedIn, zipCode])
+  }, [auth.isLockedAndLoaded, zipCode], 'app/page')
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-2">
