@@ -1,12 +1,6 @@
-import { formatDate } from "@/_tools/formatters"
-import { Card, Flex, Text, Progress } from "@mantine/core";
-import { IconDroplet } from "@tabler/icons-react";
+import { Card, Flex, Text } from "@mantine/core";
 import { FC } from "react";
 import TabContainer from "../_components/tabs/TabContainer";
-import TabTitle from "../_components/tabs/TabTitle";
-import Temperature from "../Forecast/_components/Temperature";
-import GrowingDegreeDays from "../Forecast/_components/GrowingDegreeDays";
-import IconAndText from "../_components/IconAndText";
 import { CurrentProperties, UrlParams } from "../types";
 import EditText from "../_components/EditText";
 import { isValidAmount } from "@/_tools/utils";
@@ -34,18 +28,7 @@ const Overview: FC<OverviewProps> = () => {
 
   return (
     <TabContainer>
-      <TabTitle
-        primary='Overview'
-        secondary={weatherData.location}
-      />
-      <Card
-        shadow="sm"
-        padding="md"
-        radius="md"
-        withBorder
-        w="100%"
-        maw="500"
-      >
+      <Card>
         <Flex h="32" justify="flex-start" align="center">
           <Text pr='4'>
             Current Height:

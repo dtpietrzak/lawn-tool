@@ -1,12 +1,11 @@
 'use client'
 
-import { LawnDataProvider } from "@/_hooks/useLawnData"
 import { UserDataProvider } from "@/_hooks/useUserData"
 import { ClerkProvider } from "@clerk/nextjs"
 import { dark } from '@clerk/themes';
 import { FC } from "react"
-import { FirestoreProvider, DatabaseProvider, useFirebaseApp, AuthProvider, useInitFirestore } from "reactfire"
-import { enableIndexedDbPersistence, getFirestore, initializeFirestore } from "firebase/firestore"
+import { FirestoreProvider, DatabaseProvider, useFirebaseApp, AuthProvider } from "reactfire"
+import { getFirestore } from "firebase/firestore"
 import { getDatabase } from "firebase/database"
 import { getAuth } from "firebase/auth"
 
@@ -29,9 +28,7 @@ const Providers_2: FC<ProvidersProps> = ({
         <DatabaseProvider sdk={getDatabase(firebaseApp)}>
           <FirestoreProvider sdk={getFirestore(firebaseApp)}>
             <UserDataProvider>
-              <LawnDataProvider>
-                {children}
-              </LawnDataProvider>
+              {children}
             </UserDataProvider>
           </FirestoreProvider>
         </DatabaseProvider>

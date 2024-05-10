@@ -1,6 +1,5 @@
 import { FC, useState } from "react";
 import TabContainer from "../_components/tabs/TabContainer";
-import TabTitle from "../_components/tabs/TabTitle";
 import { Calendar as MantineCalendar } from '@mantine/dates'
 import useWeatherData from "@/_hooks/useWeatherData";
 import dayjs from 'dayjs'
@@ -24,10 +23,6 @@ const Calendar: FC<CalendarProps> = () => {
 
   return (
     <TabContainer>
-      <TabTitle
-        primary='Calendar'
-        secondary={weatherData.location}
-      />
       <Card
         shadow="sm"
         padding="md"

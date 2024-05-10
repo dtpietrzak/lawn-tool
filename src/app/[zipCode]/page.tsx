@@ -10,18 +10,14 @@ import Notes from "./Notes"
 
 import useSearchParamsPush from "../../_hooks/useSearchParamsPush"
 import { WeatherDataProvider } from "@/_hooks/useWeatherData"
+import useLawnData from "@/_hooks/useLawnData"
 
 export default function Dashboard() {
   const { searchParams } = useSearchParamsPush()
 
   return (
     <main className="flex min-h-screen w-full flex-col items-center justify-between">
-      <WeatherDataProvider
-        lawnData={{
-          id: "",
-          height: 0
-        }}
-      >
+      <WeatherDataProvider>
         <Tabs
           defaultValue="overview"
           value={searchParams.get('tab') ?? 'overview'}

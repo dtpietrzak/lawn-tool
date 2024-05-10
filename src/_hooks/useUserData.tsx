@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/nextjs'
-import { FC, createContext, useCallback, useContext, useEffect } from 'react'
+import { FC, createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useFirestoreDocData, useAuth as useFirebaseAuth, useDatabase, useDatabaseObjectData, useFirestore } from 'reactfire'
 import { signInWithCustomToken, updateEmail } from 'firebase/auth'
 import { ref, get, set } from 'firebase/database'
@@ -26,9 +26,14 @@ export const UserDataProvider: FC<UserDataProviderProps> = ({
   const clerkUser = useClerkUser()
   const firebaseAuth = useFirebaseAuth()
   const database = useDatabase()
-  const firestore = useFirestore()
 
   const primaryEmail = clerkUser.user?.primaryEmailAddress?.emailAddress
+
+  const [isLockedAndLoaded, setIsLockedAndLoaded] = useState<boolean>(Boolean(
+    clerkAuth.isLoaded &&
+    clerkAuth.isSignedIn &&
+    firebaseAuth?.currentUser?.uid
+  ))
 
   const syncAuthWithFirebase = useCallback(async () => {
     const token = await clerkAuth.getToken({ template: 'integration_firebase' })
@@ -44,7 +49,11 @@ export const UserDataProvider: FC<UserDataProviderProps> = ({
       set(databaseRef, defaultUserData)
     }
 
-    // const firestoreDoc = doc(firestore, `lawns/${userCredentials.user.uid}`)
+    setIsLockedAndLoaded(Boolean(
+      clerkAuth.isLoaded &&
+      clerkAuth.isSignedIn &&
+      firebaseAuth?.currentUser?.uid
+    ))
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clerkAuth.userId])
@@ -63,27 +72,21 @@ export const UserDataProvider: FC<UserDataProviderProps> = ({
       await clerkAuth.signOut()
       await firebaseAuth.signOut()
     },
-    isLockedAndLoaded: Boolean(
-      clerkAuth.isLoaded &&
-      clerkAuth.isSignedIn &&
-      firebaseAuth?.currentUser?.uid
-    )
+    isLockedAndLoaded: isLockedAndLoaded,
   }
 
-  if (auth.isLockedAndLoaded) {
-    return (
-      <UserDataLoader
-        auth={auth}
-      >
+  return (
+    isLockedAndLoaded ?
+      <UserDataLoader auth={auth}>
         {children}
       </UserDataLoader>
-    )
-  }
-
-  return children
+      :
+      children
+  )
 }
 
 export type UserData = {
+  lastLawnViewed: string | undefined,
   tabOptions: {
     forecast: {
       temps: boolean
@@ -105,6 +108,7 @@ export type UserDataContext = {
 }
 
 const defaultUserData: UserData = {
+  lastLawnViewed: undefined,
   tabOptions: {
     forecast: {
       temps: true,

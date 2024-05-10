@@ -12,7 +12,7 @@ import { DateDataArray, DateDataObject, UrlParams, WeeklyData } from '@/app/[zip
 import { formatDate } from '@/_tools/formatters'
 import { DeepSetter, getValidatedZip } from '@/_tools/utils'
 import { getDailyGdd, getF } from '@/_tools/formulae'
-import { LawnData } from './useLawnData'
+import useLawnData, { LawnData } from './useLawnData'
 import useUserData from './useUserData'
 import useRouteGuard from './useRouteGuard'
 
@@ -59,12 +59,10 @@ export const defaultContext = {
 export const WeatherDataContext = createContext(defaultContext)
 
 export type WeatherDataProviderProps = {
-  lawnData: LawnData
   children: React.ReactNode
 }
 
 export const WeatherDataProvider: FC<WeatherDataProviderProps> = ({
-  lawnData,
   children,
 }) => {
   const params = useParams<UrlParams>()
@@ -80,6 +78,8 @@ export const WeatherDataProvider: FC<WeatherDataProviderProps> = ({
       return '/'
     }
   }, [auth, isDemo, params.zipCode], 'hooks/useWeatherData')
+
+  const { lastMow } = useLawnData()
 
   const [weatherData, setWeatherData] = useLocalStorage<WeatherData>({
     key: `weather-data-${params.zipCode}`,
@@ -194,7 +194,7 @@ export const WeatherDataProvider: FC<WeatherDataProviderProps> = ({
 
         data.set(
           'growth.agdu',
-          (accumulatedHeight + lawnData.height).toFixed(2),
+          (accumulatedHeight + (lastMow?.meta.height ?? 0)).toFixed(2),
         )
       }
 
@@ -215,7 +215,7 @@ export const WeatherDataProvider: FC<WeatherDataProviderProps> = ({
         }
       }
     }
-  }, [lawnData.height, weatherData])
+  }, [lastMow?.meta.height, weatherData])
 
   return (
     <WeatherDataContext.Provider value={{

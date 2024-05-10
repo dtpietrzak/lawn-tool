@@ -12,6 +12,7 @@ import useUserData from '@/_hooks/useUserData';
 import { UrlParams } from './types';
 import useRouteGuard from '@/_hooks/useRouteGuard';
 import { UserButton } from '@clerk/nextjs'
+import { LawnDataProvider } from '@/_hooks/useLawnData';
 
 const topNavHeight = 50
 
@@ -26,7 +27,7 @@ export default function Layout({
   const pinned = useHeadroom({ fixedAt: 120 })
   const [scroll] = useWindowScroll()
 
-  const { auth } = useUserData()
+  const { auth, userData } = useUserData()
 
   useRouteGuard(() => {
     if (
@@ -52,117 +53,121 @@ export default function Layout({
   )
 
   return (
-    <AppShell
-      layout='alt'
-      header={{
-        height: topNavHeight,
-        collapsed: !(pinned && scroll.y <= topNavHeight),
-        offset: false,
-      }}
-      footer={{
-        height: 60,
-        collapsed: false,
-      }}
-      navbar={{
-        width: 280,
-        breakpoint: 'sm',
-        collapsed: { mobile: !opened },
-      }}
-      aside={{
-        width: 340,
-        breakpoint: 'md',
-        collapsed: {
-          desktop: false,
-          mobile: true,
-        }
-      }}
-      padding="md"
+    <LawnDataProvider
+      lawnId={userData.lastLawnViewed}
     >
-      <AppShell.Header>
-        <Flex justify="space-between" align="center" p='sm' h="50">
-          <Flex align="center" p='sm' h="50">
-            <Burger
-              opened={opened}
-              onClick={toggle}
-              hiddenFrom="sm"
-              size="sm"
-            />
-            <Title
-              size="h5"
-              c="dimmed"
-              ml={{
-                sm: 'lg',
-                md: 0,
-              }}
-            >
-              Lawn Tool
-            </Title>
-          </Flex>
-          <Flex align="center" gap="xs">
-            <Text c='dimmed' size='xs'>
-              {auth.email}
-            </Text>
-            <UserButton afterSignOutUrl='/sign-out' />
-          </Flex>
-        </Flex>
-      </AppShell.Header>
-
-      <AppShell.Navbar p="md">
-        <Flex h={topNavHeight} justify="flex-end" hiddenFrom='sm'>
-          <IconX onClick={toggle} />
-        </Flex>
-        Search:
-        <ZipCodeSearch
-          zipCode={zipCode}
-          onZipCodeChange={(zipCode) => setZipCode(zipCode)}
-          onZipCodeSubmit={(zipCode) => handleZipCodeSubmitted(zipCode)}
-        />
-      </AppShell.Navbar>
-
-      <AppShell.Main
-        pt={`calc(${rem(50)} + var(--mantine-spacing-md))`}
+      <AppShell
+        layout='alt'
+        header={{
+          height: topNavHeight,
+          collapsed: !(pinned && scroll.y <= topNavHeight),
+          offset: false,
+        }}
+        footer={{
+          height: 60,
+          collapsed: false,
+        }}
+        navbar={{
+          width: 280,
+          breakpoint: 'sm',
+          collapsed: { mobile: !opened },
+        }}
+        aside={{
+          width: 340,
+          breakpoint: 'md',
+          collapsed: {
+            desktop: false,
+            mobile: true,
+          }
+        }}
+        padding="md"
       >
-        {children}
-      </AppShell.Main>
+        <AppShell.Header>
+          <Flex justify="space-between" align="center" p='sm' h="50">
+            <Flex align="center" p='sm' h="50">
+              <Burger
+                opened={opened}
+                onClick={toggle}
+                hiddenFrom="sm"
+                size="sm"
+              />
+              <Title
+                size="h5"
+                c="dimmed"
+                ml={{
+                  sm: 'lg',
+                  md: 0,
+                }}
+              >
+                Lawn Tool
+              </Title>
+            </Flex>
+            <Flex align="center" gap="xs">
+              <Text c='dimmed' size='xs'>
+                {auth.email}
+              </Text>
+              <UserButton afterSignOutUrl='/sign-out' />
+            </Flex>
+          </Flex>
+        </AppShell.Header>
 
-      <AppShell.Aside p="md">
-        <Store />
-      </AppShell.Aside>
-      <AppShell.Footer>
-        <Flex className='h-full w-full justify-evenly items-center'>
-          <BottomNavButton
-            title="Overview"
-          >
-            <IconDashboard />
-          </BottomNavButton>
-          <Divider orientation="vertical" my='md' />
-          <BottomNavButton
-            title="Forecast"
-          >
-            <IconSun />
-          </BottomNavButton>
-          <Divider orientation="vertical" my='md' />
-          <BottomNavButton
-            title="Lawn"
-          >
-            <IconPlant2 />
-          </BottomNavButton>
-          <Divider orientation="vertical" my='md' />
-          <BottomNavButton
-            title="Calendar"
-          >
-            <IconCalendarEvent />
-          </BottomNavButton>
-          <Divider orientation="vertical" my='md' hiddenFrom='md' />
-          <div className='mantine-hidden-from-md'>
+        <AppShell.Navbar p="md">
+          <Flex h={topNavHeight} justify="flex-end" hiddenFrom='sm'>
+            <IconX onClick={toggle} />
+          </Flex>
+          Search:
+          <ZipCodeSearch
+            zipCode={zipCode}
+            onZipCodeChange={(zipCode) => setZipCode(zipCode)}
+            onZipCodeSubmit={(zipCode) => handleZipCodeSubmitted(zipCode)}
+          />
+        </AppShell.Navbar>
+
+        <AppShell.Main
+          pt={`calc(${rem(50)} + var(--mantine-spacing-md))`}
+        >
+          {children}
+        </AppShell.Main>
+
+        <AppShell.Aside p="md">
+          <Store />
+        </AppShell.Aside>
+        <AppShell.Footer>
+          <Flex className='h-full w-full justify-evenly items-center'>
             <BottomNavButton
-              title="Notes"
+              title="Overview"
             >
-              <IconNotebook />
+              <IconDashboard />
             </BottomNavButton>
-          </div>
-        </Flex>
-      </AppShell.Footer >
-    </AppShell >
+            <Divider orientation="vertical" my='md' />
+            <BottomNavButton
+              title="Forecast"
+            >
+              <IconSun />
+            </BottomNavButton>
+            <Divider orientation="vertical" my='md' />
+            <BottomNavButton
+              title="Lawn"
+            >
+              <IconPlant2 />
+            </BottomNavButton>
+            <Divider orientation="vertical" my='md' />
+            <BottomNavButton
+              title="Calendar"
+            >
+              <IconCalendarEvent />
+            </BottomNavButton>
+            <Divider orientation="vertical" my='md' hiddenFrom='md' />
+            <div className='mantine-hidden-from-md'>
+              <BottomNavButton
+                title="Notes"
+              >
+                <IconNotebook />
+              </BottomNavButton>
+            </div>
+          </Flex>
+        </AppShell.Footer >
+      </AppShell >
+    </LawnDataProvider>
   )
 }
