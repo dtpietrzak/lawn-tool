@@ -1,39 +1,36 @@
 'use client'
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useRouter } from 'next/navigation'
-import ZipCodeSearch from '@/app/[zipCode]/_components/navbar/ZipCodeSearch'
-import { Text } from "@mantine/core"
-import { useLocalStorage } from "@mantine/hooks"
+import ZipCodeSearch from '@/app/[lawnId]/_components/navbar/ZipCodeSearch'
+import { Card, Text } from "@mantine/core"
+import useRouteGuard from "@/_hooks/useRouteGuard"
 
 export default function Page() {
   const router = useRouter()
 
-  const [zipCode, setZipCode] = useLocalStorage<string>({
-    key: 'default-zip-code',
-    defaultValue: '',
-  })
+  const [zipCode, setZipCode] = useState('')
 
-  const [_zipCode, _setZipCode] = useState('')
-
-  useEffect(() => {
+  useRouteGuard(() => {
     if (zipCode) router.push(`/${zipCode}`)
-  }, [router, zipCode])
+  }, [router, zipCode], 'app/new-lawn')
 
   const handleWeatherDataUpdate = (zip_code: string) => {
-    setZipCode(zip_code)
+    router.push(`/${zip_code}`)
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between">
-      <ZipCodeSearch
-        zipCode={_zipCode}
-        onZipCodeChange={(zip_code) => _setZipCode(zip_code)}
-        onZipCodeSubmit={(zip_code) => handleWeatherDataUpdate(zip_code)}
-      />
-      <Text>
-        Search your zip code
-      </Text>
+    <main className="flex min-h-screen flex-col items-center justify-center">
+      <Card className="flex gap-5" p='xl'>
+        <Text>
+          Search your zip code
+        </Text>
+        <ZipCodeSearch
+          zipCode={zipCode}
+          onZipCodeChange={(zip_code) => setZipCode(zip_code)}
+          onZipCodeSubmit={(zip_code) => handleWeatherDataUpdate(zip_code)}
+        />
+      </Card>
     </main>
   )
 }

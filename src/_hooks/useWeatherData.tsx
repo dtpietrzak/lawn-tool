@@ -3,17 +3,18 @@
 import { WeatherData } from '@/app/api/tools/requests'
 import { useLocalStorage } from '@mantine/hooks'
 import { FC, createContext, useCallback, useContext, useEffect, useMemo } from 'react'
-import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { testData } from '@/__tests__/testWeatherData'
 import { notifications } from '@mantine/notifications'
 import { Flex, Text } from '@mantine/core'
 import { IconX } from '@tabler/icons-react'
-import { DateDataArray, DateDataObject, UrlParams, WeeklyData } from '@/app/[zipCode]/types'
+import { DateDataArray, DateDataObject, WeeklyData } from '@/app/types'
 import { formatDate } from '@/_tools/formatters'
-import { DeepSetter } from '@/_tools/utils'
+import { DeepSetter, getValidatedZip } from '@/_tools/utils'
 import { getDailyGdd, getF } from '@/_tools/formulae'
-import { LawnData } from './useLawnData'
-import useUserData from './useUserData'
+import useLawnData from './useLawnData'
+import useRouteGuard from './useRouteGuard'
+
+const GET_ON_DEV = false;
 
 let failedRequest = false
 
@@ -58,76 +59,45 @@ export const defaultContext = {
 export const WeatherDataContext = createContext(defaultContext)
 
 export type WeatherDataProviderProps = {
-  zipCode?: string
-  lawnData: LawnData
   children: React.ReactNode
 }
 
 export const WeatherDataProvider: FC<WeatherDataProviderProps> = ({
-  zipCode,
-  lawnData,
   children,
 }) => {
-  const params = useParams<UrlParams>()
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const { auth } = useUserData()
+  const { viewingLawn } = useLawnData()
+  const zipcode = viewingLawn?.properties?.zipcode ?? ''
 
-  const isDemo = (auth.isLoaded && !auth.isSignedIn) && searchParams.get('demo') === "true"
-
-  useEffect(() => {
-    if (isDemo) return // don't redirect
-    if (!params?.zipCode) {
-      router.push('/')
-      return
-    }
-    if (typeof params.zipCode !== 'string') {
-      router.push('/')
-      return
-    }
-    if (params.zipCode.length !== 5) {
-      router.push('/')
-      return
-    }
-  }, [router, params, isDemo])
+  const { lastMow } = useLawnData()
 
   const [weatherData, setWeatherData] = useLocalStorage<WeatherData>({
-    key: `weather-data-${params.zipCode}`,
+    key: `weather-data-${zipcode}`,
     defaultValue: testData,
   })
 
   const handleWeatherDataUpdate = useCallback(async (zip_code?: string) => {
-    if (isDemo) return testData
     if (!zip_code) return
+    if (!getValidatedZip(zip_code)) return
     if (window.location.href.includes('localhost')) {
-      return testData
+      if (GET_ON_DEV) {
+        return fetchWeatherUpdate(zip_code)
+      } else {
+        return testData
+      }
     } else {
-      return fetch(`/api/weather-data/${zip_code}`, {
-        cache: 'no-cache',
-      })
-        .then((data) => data.json())
-        .then((data) => {
-          return data.data as WeatherData
-        })
-        .catch((error: any) => {
-          if (!failedRequest) {
-            failedRequest = true
-            notifications.show(notificationOptions)
-          }
-          throw Error(error)
-        })
+      return fetchWeatherUpdate(zip_code)
     }
-  }, [isDemo])
+  }, [])
 
   useEffect(() => {
     let ignore = false
-    handleWeatherDataUpdate(params?.zipCode)
+    handleWeatherDataUpdate(zipcode)
       .then((weatherData) => {
         if (!ignore) setWeatherData(weatherData)
       })
       .catch((error) => console.error(error))
     return () => { ignore = true }
-  }, [handleWeatherDataUpdate, params.zipCode, setWeatherData])
+  }, [handleWeatherDataUpdate, zipcode, setWeatherData])
 
   const transformedData = useMemo(() => {
     if (!weatherData) {
@@ -216,7 +186,7 @@ export const WeatherDataProvider: FC<WeatherDataProviderProps> = ({
 
         data.set(
           'growth.agdu',
-          (accumulatedHeight + lawnData.height).toFixed(2),
+          (accumulatedHeight + (lastMow?.meta.height ?? 0)).toFixed(2),
         )
       }
 
@@ -237,14 +207,14 @@ export const WeatherDataProvider: FC<WeatherDataProviderProps> = ({
         }
       }
     }
-  }, [lawnData.height, weatherData])
+  }, [lastMow?.meta?.height, weatherData])
 
   return (
     <WeatherDataContext.Provider value={{
       weatherData: weatherData,
       transformedData: transformedData,
       reloadWeatherData: () => {
-        handleWeatherDataUpdate(zipCode)
+        handleWeatherDataUpdate(zipcode)
           .then((weatherData) => setWeatherData(weatherData))
           .catch((error) => console.error(error))
       },
@@ -277,6 +247,23 @@ const notificationOptions = {
   color: 'red',
   autoClose: false,
   icon: <IconX />,
+}
+
+const fetchWeatherUpdate = async (zip_code: string) => {
+  return fetch(`/api/weather-data/${zip_code}`, {
+    cache: 'no-cache',
+  })
+    .then((data) => data.json())
+    .then((data) => {
+      return data.data as WeatherData
+    })
+    .catch((error: any) => {
+      if (!failedRequest) {
+        failedRequest = true
+        notifications.show(notificationOptions)
+      }
+      throw Error(error)
+    })
 }
 
 export const useWeatherData = () => useContext(WeatherDataContext)

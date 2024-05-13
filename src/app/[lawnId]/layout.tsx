@@ -1,6 +1,6 @@
 'use client'
 
-import { AppShell, Burger, Flex, Title, Text, rem, Divider, LoadingOverlay, Avatar } from '@mantine/core';
+import { AppShell, Burger, Flex, Title, Text, rem, Divider, LoadingOverlay } from '@mantine/core';
 import { useDisclosure, useHeadroom, useWindowScroll } from '@mantine/hooks';
 import ZipCodeSearch from './_components/navbar/ZipCodeSearch';
 import { useEffect, useState } from 'react';
@@ -9,7 +9,10 @@ import { IconCalendarEvent, IconDashboard, IconNotebook, IconPlant2, IconSun, Ic
 import BottomNavButton from './_components/tabs/BottomNavButton';
 import Store from './Notes';
 import useUserData from '@/_hooks/useUserData';
-import { UrlParams } from './types';
+import { UrlParams } from '../types';
+import useRouteGuard from '@/_hooks/useRouteGuard';
+import { UserButton } from '@clerk/nextjs'
+import useLawnData from '@/_hooks/useLawnData';
 
 const topNavHeight = 50
 
@@ -19,33 +22,34 @@ export default function Layout({
   children: React.ReactNode
 }) {
   const params = useParams<UrlParams>()
-  const router = useRouter()
-  const searchParams = useSearchParams()
   const pinned = useHeadroom({ fixedAt: 120 })
   const [scroll] = useWindowScroll()
 
-  const { auth } = useUserData()
+  const { auth, updateUserData } = useUserData()
+  const { lawnData, viewingLawn } = useLawnData()
 
-  const [zipCode, setZipCode] = useState<string>(params?.zipCode ?? '')
+  useRouteGuard(async () => {
+    // if there's no lawn data, go to new-lawn
+    if (!lawnData) return
+    if (lawnData.length === 0) return '/new-lawn'
+    if (viewingLawn?.id !== params.lawnId) {
+      const shouldBeViewingLawn = lawnData.find((lawn) => {
+        return lawn.id === params.lawnId
+      })
+      if (shouldBeViewingLawn) {
+        await updateUserData({viewingLawn: shouldBeViewingLawn.id})
+      } else {
+        return '/new-lawn'
+      }
+    }
+  }, [lawnData, params.lawnId, updateUserData, viewingLawn?.id], 'app/zipcode/layout')
+
   const [opened, { toggle }] = useDisclosure();
+  const [zipCode, setZipCode] = useState(viewingLawn?.properties.zipcode ?? '');
 
   const handleZipCodeSubmitted = (zip_code: string) => {
-    router.push(`/${zip_code}`)
+    // router.push(`/${zip_code}`)
   }
-
-  useEffect(() => {
-    if (
-      auth.isLoaded &&
-      !auth.isSignedIn &&
-      searchParams.get('demo') !== "true"
-    ) {
-      router.push('/')
-    }
-  }, [auth.isLoaded, auth.isSignedIn, router, searchParams])
-
-  if (!auth.isLoaded) return (
-    <LoadingOverlay />
-  )
 
   return (
     <AppShell
@@ -84,7 +88,7 @@ export default function Layout({
               size="sm"
             />
             <Title
-              size="h2"
+              size="h5"
               c="dimmed"
               ml={{
                 sm: 'lg',
@@ -96,9 +100,9 @@ export default function Layout({
           </Flex>
           <Flex align="center" gap="xs">
             <Text c='dimmed' size='xs'>
-              {auth.user?.primaryEmailAddress?.emailAddress}
+              {auth.email}
             </Text>
-            <Avatar />
+            <UserButton afterSignOutUrl='/sign-out' />
           </Flex>
         </Flex>
       </AppShell.Header>

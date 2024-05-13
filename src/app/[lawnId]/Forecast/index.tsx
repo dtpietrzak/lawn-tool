@@ -1,68 +1,25 @@
-import { formatDate } from "@/_tools/formatters"
-import { Card, Flex, Text, Progress } from "@mantine/core";
-import { IconDroplet } from "@tabler/icons-react";
 import { FC } from "react";
+import { formatDate } from "@/_tools/formatters"
+import { Card, Flex, Text, Progress, Title } from "@mantine/core";
+import { IconDroplet } from "@tabler/icons-react";
 import TabContainer from "../_components/tabs/TabContainer";
-import TabTitle from "../_components/tabs/TabTitle";
 import Temperature from "./_components/Temperature";
 import GrowingDegreeDays from "./_components/GrowingDegreeDays";
 import IconAndText from "../_components/IconAndText";
-import { CurrentProperties, UrlParams } from "../types";
-import EditText from "../_components/EditText";
-import { isValidAmount } from "@/_tools/utils";
 import useWeatherData from "@/_hooks/useWeatherData";
-import { useLocalStorage } from "@mantine/hooks";
-import { useParams } from "next/navigation";
+import useUserData from "@/_hooks/useUserData";
+import PaperDroppable from "./_components/PaperDroppable";
+import useLawnData from "@/_hooks/useLawnData";
 
-export type OverviewProps = {
+export type ForecastProps = {
 }
 
-const Overview: FC<OverviewProps> = () => {
-  const params = useParams<UrlParams>()
-  
-  const { weatherData, transformedData } = useWeatherData()
-
-  const [grassData, setGrassData] = useLocalStorage<CurrentProperties>({
-    key: `grass-data-${params.zipCode}`,
-    defaultValue: {
-      height: 0,
-      water: 0,
-    },
-  })
+const Forecast: FC<ForecastProps> = () => {
+  const { transformedData } = useWeatherData()
+  const { userData } = useUserData()
 
   return (
     <TabContainer>
-      <TabTitle
-        primary='Overview'
-        secondary={weatherData.location}
-      />
-      <Card
-        shadow="sm"
-        padding="md"
-        radius="md"
-        withBorder
-        w="100%"
-        maw="500"
-      >
-        <Flex h="32" justify="flex-start" align="center">
-          <Text pr='4'>
-            Current Height:
-          </Text>
-          <EditText
-            suffix='"'
-            loadStatus="success"
-            value={grassData.height.toFixed(2)}
-            onSave={(value) => {
-              if (isValidAmount(value)) {
-                setGrassData({
-                  ...grassData,
-                  height: parseInt(value),
-                })
-              }
-            }}
-          />
-        </Flex>
-      </Card>
       {
         transformedData.dataByDateArray.map((data) => {
           if (data.noaa.day && data.noaa.night) {
@@ -70,28 +27,23 @@ const Overview: FC<OverviewProps> = () => {
             const night = data.noaa.night
 
             return (
-              <Card
-                key={day.number}
-                shadow="sm"
-                padding="md"
-                radius="md"
-                withBorder
-                w="100%"
-                maw="500"
-              >
+              <Card key={day.number}>
                 <Flex direction="column" gap="2">
                   <Flex justify="space-between">
-                    <Text
-                      size='sm'
+                    <Title
+                      size='md'
                     >
                       {day.name}
-                    </Text>
-                    <Text
-                      size='sm'
-                      c="dimmed"
-                    >
-                      {formatDate(day.startTime)}
-                    </Text>
+                    </Title>
+                    {
+                      userData.tabOptions.forecast.date &&
+                      <Text
+                        size='sm'
+                        c="dimmed"
+                      >
+                        {formatDate(day.startTime)}
+                      </Text>
+                    }
                   </Flex>
                   <Flex justify="space-between">
                     <Flex gap="xs" justify="space-between" className="w-full">
@@ -145,28 +97,10 @@ const Overview: FC<OverviewProps> = () => {
                     </Progress.Root>
                   </div>
                 </Flex>
-                <Flex direction="column" gap="xs" mt="xs">
-                  <Flex direction="column">
-                    <Text
-                      size='sm'
-                    >
-                      Day
-                    </Text>
-                    <Text size='xs' c='dimmed'>
-                      {data.noaa.day.detailedForecast}
-                    </Text>
-                  </Flex>
-                  <Flex direction="column">
-                    <Text
-                      size='sm'
-                    >
-                      Night
-                    </Text>
-                    <Text size='xs' c='dimmed'>
-                      {data.noaa.night.detailedForecast}
-                    </Text>
-                  </Flex>
-                </Flex>
+                <PaperDroppable
+                  dayDescription={data.noaa.day.detailedForecast}
+                  nightDescription={data.noaa.night.detailedForecast}
+                />
               </Card>
             )
           } else {
@@ -179,4 +113,4 @@ const Overview: FC<OverviewProps> = () => {
   )
 }
 
-export default Overview
+export default Forecast

@@ -3,7 +3,7 @@ import { IconArrowRight, IconSearch } from "@tabler/icons-react"
 import { FC } from "react"
 import { theme } from "../../../theme"
 import { useParams } from "next/navigation"
-import { UrlParams } from "../../types"
+import { UrlParams } from "../../../types"
 
 export type ZipCodeSearchProps = {
   zipCode: string,
@@ -16,8 +16,6 @@ const ZipCodeSearch: FC<ZipCodeSearchProps> = ({
   onZipCodeChange,
   onZipCodeSubmit,
 }) => {
-    const params = useParams<UrlParams>()
-
     const handleZipCodeSubmit = (zip_code: string) => {
       window.history.pushState(undefined, "", `/${zipCode}`)
       onZipCodeSubmit(zipCode)
@@ -36,7 +34,6 @@ const ZipCodeSearch: FC<ZipCodeSearchProps> = ({
             <ActionIcon
               size={32}
               radius="xl"
-              c={params.zipCode == zipCode ? theme.black : theme.primaryColor}
               variant="filled"
               onClick={() => handleZipCodeSubmit(zipCode)}
             >
