@@ -1,4 +1,5 @@
 import { notifications } from "@mantine/notifications"
+import isObject from 'isobject'
 
 
 
@@ -93,7 +94,17 @@ export const isValidAmount = (amount: number | string) => {
     return false
   }
   if (typeof amount === 'string') {
-    amount = parseFloat(amount)
+    try {
+      amount = parseFloat(amount)
+    } catch {
+      notifications.show({
+        title: 'Invalid amount entered',
+        message: 'Please enter a valid number',
+        color: 'red',
+        autoClose: 2000,
+      })
+      return false
+    }
   }
   if (isNaN(amount)) {
     notifications.show({
@@ -105,4 +116,108 @@ export const isValidAmount = (amount: number | string) => {
     return false
   }
   return true
+}
+
+
+export type Idi = string | number
+
+export type ObjectWithId<T extends {
+  id: string
+} = { id: string }> = T
+
+export const arrays = {
+  getElement<T extends ObjectWithId>(
+    array: T[] | undefined,
+    idi: string | number | (string | number)[] | undefined,
+    appendError?: string,
+  ): [T, number] {
+    if (!array) {
+      throw new Error(`Tried arrays.getElement without an array ${appendError}`)
+    }
+    if (typeof idi === 'undefined') {
+      throw new Error(`Tried arrays.getElement without an identifier ${appendError}`)
+    }
+    if (!Array.isArray(array)) {
+      throw new Error(`Tried arrays.getElement on something that isn\'t an array: ${typeof array} ${appendError}.${idi.toString()}`)
+    }
+
+    let index = 0
+
+    switch (typeof idi) {
+      case 'string': {
+        const item = array.find((item, i) => {
+          index = i
+          return item.id === idi
+        })
+        if (!item) throw new Error(`Tried arrays.getElement but item could not be found ${appendError}.${idi.toString()}`)
+        console.log(`${appendError}.${idi.toString()} INDEX: ${index}`)
+        return [item, index]
+      }
+      case 'number': {
+        index = idi
+        return [array[idi], index]
+      }
+      default: {
+        if (Array.isArray(idi)) {
+          const bestIdi = ensureOneExists(...idi)
+          if (typeof bestIdi === 'number') {
+            index = bestIdi
+            return [array[bestIdi], index]
+          } else if (typeof bestIdi === 'string') {
+            const item = array.find((item, i) => {
+              index = i
+              return item.id === bestIdi
+            })
+            if (!item) throw new Error(`Tried arrays.getElement but item could not be found ${appendError}.${idi.toString()}`)
+            return [item, index]
+          }
+        }
+        throw new Error(`Tried arrays.getElement but identifier is not a string nor a number ${appendError}.${idi.toString()}`)
+      }
+    }
+  },
+}
+
+
+export const objects = {
+  mergeDownTwo<T extends Record<string, unknown>>(
+    object: T,
+    key: keyof T,
+    data: Record<string, unknown>,
+    id: string,
+  ): T {
+    if (!isObject(object[key])) {
+      throw new Error('object[key] is not an object')
+    }
+    // @ts-ignore
+    if (!object[key]?.[id] || !isObject(object[key]?.[id])) {
+      throw new Error('object[key]?.[id] is not an object')
+    }
+
+    return {
+      ...object,
+      [key]: {
+        ...(object[key] as Record<string, unknown>),
+        [id]: {
+          // @ts-ignore
+          ...(object[key][id] as Record<string, unknown>),
+          ...data,
+        }
+      }
+    }
+  },
+}
+
+export const ensureOneExists = <T extends unknown = unknown>(
+  ...args: T[]
+) => {
+  let found
+  for (let i = 0; i < args.length; i++) {
+    if (args?.[i]) {
+      found = args[i]
+      break
+    }
+  }
+  if (!found) throw new Error('failed to ensureOneExists')
+  return found
 }

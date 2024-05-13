@@ -1,10 +1,10 @@
 'use client'
 
 import { useAuth as useClerkAuth, useUser as useClerkUser } from '@clerk/nextjs'
-import { FC, createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { Dispatch, FC, SetStateAction, createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useFirestoreDocData, useAuth as useFirebaseAuth, useDatabase, useDatabaseObjectData, useFirestore } from 'reactfire'
 import { signInWithCustomToken, updateEmail } from 'firebase/auth'
-import { ref, get, set } from 'firebase/database'
+import { ref, get, set, update } from 'firebase/database'
 import { doc } from 'firebase/firestore'
 
 export type Auth = {
@@ -86,7 +86,7 @@ export const UserDataProvider: FC<UserDataProviderProps> = ({
 }
 
 export type UserData = {
-  lastLawnViewed: string | undefined,
+  viewingLawn: string | undefined,
   tabOptions: {
     forecast: {
       temps: boolean
@@ -103,12 +103,26 @@ export type UserDataContext = {
   auth: Auth
   userDataStatus: ReturnType<typeof useFirestoreDocData>['status']
   userData: UserData
-  setUserData: (userData: UserData) => UserData
-  updateUserData: (userData: UserData) => UserData
+  /**
+  * sets the user data locally, like React setState
+  * @param userData 
+  * @returns 
+  */
+  setUserData: Dispatch<SetStateAction<UserData>>
+  /**
+  * updates the user data in firebase and locally
+  * 
+  * the local part of the update is done by an internal React setState
+  * 
+  * so it'll automatically re-render when the local state changes
+  * @param userData 
+  * @returns 
+  */
+  updateUserData: (userData: Partial<UserData>) => Promise<UserData>
 }
 
 const defaultUserData: UserData = {
-  lastLawnViewed: undefined,
+  viewingLawn: undefined,
   tabOptions: {
     forecast: {
       temps: true,
@@ -136,11 +150,14 @@ const defaultUserContext: UserDataContext = {
   userData: defaultUserData,
   setUserData: () => {
     console.error('Attempting setUserData, but user data is not ready yet!')
-    return defaultUserData
+    return new Promise((resolve) => resolve(defaultUserData))
   },
-  updateUserData: () => {
+  updateUserData: (userData: Partial<UserData>) => {
     console.error('Attempting updateUserData, but user data is not ready yet!')
-    return defaultUserData
+    return new Promise((resolve) => resolve({
+      ...defaultUserData,
+      ...userData,
+    }))
   },
 }
 
@@ -168,13 +185,29 @@ const UserDataLoader: FC<UserDataLoaderProps> = ({
     initialData: defaultUserData,
   });
 
+  const [userData, setUserData] = useState<UserData>(data as UserData)
+
+  useEffect(() => {
+    setUserData(data as UserData)
+  }, [data])
+
+  const updateUserData = async (user_data: Partial<UserData>) => {
+    try {
+      // this will update on firebase, which will cause the listener to update "data" which will trigger the useEffect which will set user data locally.
+      await update(userDataRef, user_data)
+      return { ...userData, ...user_data } as UserData
+    } catch (err: any) {
+      throw new Error(err)
+    }
+  }
+
   const value: UserDataContext = {
     id: auth.firebaseAuth?.currentUser?.uid ?? '',
     auth: auth,
     userDataStatus: status,
-    userData: (data as UserData) ?? defaultUserData,
-    setUserData: defaultUserContext.setUserData,
-    updateUserData: defaultUserContext.updateUserData,
+    userData: userData,
+    setUserData: setUserData,
+    updateUserData: updateUserData,
   }
 
   return (

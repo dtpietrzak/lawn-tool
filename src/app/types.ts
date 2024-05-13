@@ -49,6 +49,11 @@ export type CurrentProperties = {
 export type Tab = 'overview' | 'forecast' | 'lawn' | 'calendar' | 'notes'
 
 export type UrlParams = {
-  zipCode?: string,
+  lawnId?: string,
 }
 
+export type SetPartialableStateAction<S> =
+  S | ((prevState: Required<S>) => S)
+export type DispatchWithId<A> = (value: A, id: string) => void
+export type SetPartialableStateWithId<T> =
+  DispatchWithId<SetPartialableStateAction<T>>
