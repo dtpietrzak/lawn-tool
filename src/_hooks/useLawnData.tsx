@@ -425,7 +425,6 @@ const deriveViewingLawn = (lawnData?: LawnData[], lawnId?: LawnData['id']) => {
   return Object.freeze(viewingLawn)
 }
 
-
 export const useLawnData = () => useContext(LawnDataContext)
 
 export default useLawnData

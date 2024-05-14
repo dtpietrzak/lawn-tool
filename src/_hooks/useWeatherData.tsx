@@ -12,9 +12,8 @@ import { formatDate } from '@/_tools/formatters'
 import { DeepSetter, getValidatedZip } from '@/_tools/utils'
 import { getDailyGdd, getF } from '@/_tools/formulae'
 import useLawnData from './useLawnData'
-import useRouteGuard from './useRouteGuard'
 
-const GET_ON_DEV = false;
+const GET_ON_DEV = true;
 
 let failedRequest = false
 
@@ -44,6 +43,13 @@ const defaultWeatherData: WeatherData = {
   },
   tomorrowIo: {
     forecast: undefined,
+  },
+  weatherApi: {
+    history: {
+      forecast: {
+        forecastday: []
+      }
+    },
   }
 }
 
@@ -65,10 +71,8 @@ export type WeatherDataProviderProps = {
 export const WeatherDataProvider: FC<WeatherDataProviderProps> = ({
   children,
 }) => {
-  const { viewingLawn } = useLawnData()
+  const { viewingLawn, lastMow } = useLawnData()
   const zipcode = viewingLawn?.properties?.zipcode ?? ''
-
-  const { lastMow } = useLawnData()
 
   const [weatherData, setWeatherData] = useLocalStorage<WeatherData>({
     key: `weather-data-${zipcode}`,
@@ -80,11 +84,13 @@ export const WeatherDataProvider: FC<WeatherDataProviderProps> = ({
     if (!getValidatedZip(zip_code)) return
     if (window.location.href.includes('localhost')) {
       if (GET_ON_DEV) {
+        console.log('fetching weather data...')
         return fetchWeatherUpdate(zip_code)
       } else {
         return testData
       }
     } else {
+      console.log('fetching weather data...')
       return fetchWeatherUpdate(zip_code)
     }
   }, [])

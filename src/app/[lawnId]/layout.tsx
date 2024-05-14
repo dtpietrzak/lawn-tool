@@ -30,6 +30,7 @@ export default function Layout({
 
   useRouteGuard(async () => {
     // if there's no lawn data, go to new-lawn
+    if (!auth.isLockedAndLoaded) return
     if (!lawnData) return
     if (lawnData.length === 0) return '/new-lawn'
     if (viewingLawn?.id !== params.lawnId) {
@@ -42,7 +43,7 @@ export default function Layout({
         return '/new-lawn'
       }
     }
-  }, [lawnData, params.lawnId, updateUserData, viewingLawn?.id], 'app/zipcode/layout')
+  }, [auth.isLockedAndLoaded, lawnData, params.lawnId, updateUserData, viewingLawn?.id], 'app/zipcode/layout')
 
   const [opened, { toggle }] = useDisclosure();
   const [zipCode, setZipCode] = useState(viewingLawn?.properties.zipcode ?? '');
