@@ -50,6 +50,11 @@ const defaultWeatherData: WeatherData = {
         forecastday: []
       }
     },
+    forecast: {
+      forecast: {
+        forecastday: []
+      }
+    }
   }
 }
 
