@@ -162,3 +162,65 @@ export type NoaaForecastGridData = {
     redFlagThreatIndex: NoaaWvUnknown[]
   }
 }
+
+export type WeatherApi = {
+  forecast: {
+    forecastday: WeatherApiForecastDay[]
+  }
+}
+
+export type WeatherApiForecastDay = {
+  astro: {
+    sunrise: string
+    sunset: string
+  }
+  date_epoch: number
+  day: {
+    avghumidity: number
+    avgtemp_f: number
+    avgvis_miles: number
+    condition: {
+      code: number
+      text: string
+    }
+    daily_chance_of_rain: number
+    daily_chance_of_snow: number
+    daily_will_it_rain: number
+    daily_will_it_snow: number
+    maxtemp_f: number
+    maxwind_mph: number
+    mintemp_f: number
+    totalprecip_in: number
+    totalsnow_cm: number
+    uv: number
+  }
+  hour: {
+    time_epoch: number
+    is_day: number
+    humidity: number
+    temp_f: number
+    vis_miles: number
+    condition: {
+      code: number
+      text: string
+    }
+    chance_of_rain: number
+    chance_of_snow: number
+    cloud: number
+    will_it_rain: number
+    will_it_snow: number
+    dewpoint_f: number
+    feelslike_f: number
+    maxtemp_f: number
+    wind_mph: number
+    wind_dir: string
+    gust_mph: number
+    heatindex_f: number
+    windchill_f: number
+    mintemp_f: number
+    precip_in: number
+    pressure_in: number
+    snow_cm: number
+    uv: number
+  }[]
+}

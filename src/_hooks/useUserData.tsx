@@ -6,6 +6,7 @@ import { useFirestoreDocData, useAuth as useFirebaseAuth, useDatabase, useDataba
 import { signInWithCustomToken, updateEmail } from 'firebase/auth'
 import { ref, get, set, update } from 'firebase/database'
 import { doc } from 'firebase/firestore'
+import { notifications } from '@mantine/notifications'
 
 export type Auth = {
   email: string
@@ -41,6 +42,18 @@ export const UserDataProvider: FC<UserDataProviderProps> = ({
 
     if (primaryEmail && userCredentials.user.email !== primaryEmail) {
       await updateEmail(userCredentials.user, primaryEmail)
+        .catch(async (reason) => {
+          if (JSON.stringify(reason).includes('email')) {
+            await firebaseAuth.signOut()
+            await clerkAuth.signOut()
+          } else {
+            console.error(reason)
+            notifications.show({
+              message: 'An error occurred logging in. Please completely log out and try again.',
+              color: 'red',
+            })
+          }
+        })
     }
 
     const databaseRef = ref(database, `users/${userCredentials.user.uid}`)

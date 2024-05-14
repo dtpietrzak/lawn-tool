@@ -1,6 +1,7 @@
 import { filterNoaaForecast, filterNoaaForecastGridData, filterNoaaForecastHourly } from './filters'
 import * as T from './requests_types'
 import { ezFetchGET, isFetchError } from "./utils"
+import { subDays, format, addDays } from 'date-fns'
 
 
 
@@ -70,6 +71,29 @@ const getTomorrowIoData = async (zip_code: string) => {
   }
 }
 
+const getWeatherApiData = async (zip_code: string) => {
+  const api_key = process.env.API_WEATHER_API || ''
+
+  const date = new Date().setHours(0, 0, 0, 0)
+  const sevenBack = format(subDays(date, 7), 'yyyy-MM-dd')
+  const yesterday = format(subDays(date, 1), 'yyyy-MM-dd')
+
+  const history = await ezFetchGET<T.WeatherApi>(
+    `http://api.weatherapi.com/v1/history.json?key=${api_key}&dt=${sevenBack}&end_dt=${yesterday}&q=${zip_code}`
+  )
+  if (isFetchError(history)) return
+
+  const forecast = await ezFetchGET<T.WeatherApi>(
+    `http://api.weatherapi.com/v1/forecast.json?key=${api_key}&days=7&q=${zip_code}`
+  )
+  if (isFetchError(forecast)) return
+
+  return {
+    history: history,
+    forecast: forecast,
+  }
+}
+
 export const getWeatherData = async (zip_code: string) => {
   const place = await getLatLongByZip(zip_code)
   if (!place) throw Error('No location')
@@ -77,10 +101,14 @@ export const getWeatherData = async (zip_code: string) => {
   if (!noaa_data) throw Error('No NOAA')
   const tomorrow_io_data = await getTomorrowIoData(zip_code)
   if (!tomorrow_io_data) throw Error('No Tomorrow IO')
+  const weather_api_data = await getWeatherApiData(zip_code)
+  if (!weather_api_data) throw Error('No WeatherAPI')
+
   return {
     location: place.location,
     noaa: noaa_data,
     tomorrowIo: tomorrow_io_data,
+    weatherApi: weather_api_data,
   }
 }
 export type WeatherData = Awaited<ReturnType<typeof getWeatherData>>
