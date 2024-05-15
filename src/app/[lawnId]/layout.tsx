@@ -1,10 +1,9 @@
 'use client'
 
-import { AppShell, Burger, Flex, Title, Text, rem, Divider, LoadingOverlay } from '@mantine/core';
+import { AppShell, Burger, Flex, Title, Text, rem, Divider, Center, Card, Button } from '@mantine/core';
 import { useDisclosure, useHeadroom, useWindowScroll } from '@mantine/hooks';
-import ZipCodeSearch from './_components/navbar/ZipCodeSearch';
-import { useEffect, useState } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { IconCalendarEvent, IconDashboard, IconNotebook, IconPlant2, IconSun, IconX } from '@tabler/icons-react';
 import BottomNavButton from './_components/tabs/BottomNavButton';
 import Store from './Notes';
@@ -13,6 +12,8 @@ import { UrlParams } from '../types';
 import useRouteGuard from '@/_hooks/useRouteGuard';
 import { UserButton } from '@clerk/nextjs'
 import useLawnData from '@/_hooks/useLawnData';
+import NewLawnForm from '@/app/_components/NewLawnForm'
+import EditLawnForm from '../_components/EditLawnForm';
 
 const topNavHeight = 50
 
@@ -21,6 +22,7 @@ export default function Layout({
 }: {
   children: React.ReactNode
 }) {
+  const router = useRouter()
   const params = useParams<UrlParams>()
   const pinned = useHeadroom({ fixedAt: 120 })
   const [scroll] = useWindowScroll()
@@ -38,7 +40,7 @@ export default function Layout({
         return lawn.id === params.lawnId
       })
       if (shouldBeViewingLawn) {
-        await updateUserData({viewingLawn: shouldBeViewingLawn.id})
+        await updateUserData({ viewingLawn: shouldBeViewingLawn.id })
       } else {
         return '/new-lawn'
       }
@@ -46,11 +48,6 @@ export default function Layout({
   }, [auth.isLockedAndLoaded, lawnData, params.lawnId, updateUserData, viewingLawn?.id], 'app/zipcode/layout')
 
   const [opened, { toggle }] = useDisclosure();
-  const [zipCode, setZipCode] = useState(viewingLawn?.properties.zipcode ?? '');
-
-  const handleZipCodeSubmitted = (zip_code: string) => {
-    // router.push(`/${zip_code}`)
-  }
 
   return (
     <AppShell
@@ -109,15 +106,46 @@ export default function Layout({
       </AppShell.Header>
 
       <AppShell.Navbar p="md">
-        <Flex h={topNavHeight} justify="flex-end" hiddenFrom='sm'>
-          <IconX onClick={toggle} />
+        <Flex justify='center' direction='column' w='100%'>
+          <Flex h={topNavHeight} justify="flex-end" w='100%' hiddenFrom='sm'>
+            <IconX onClick={toggle} />
+          </Flex>
+          <Center className='w-full'>
+            <Flex direction='column' gap='lg' w='full'>
+              <Card className='flex gap-3 max-w-96 w-full'>
+                <Title size="h4">
+                  My Lawns
+                </Title>
+                <Flex w="100%" direction='column' gap='xs'>
+                  {
+                    (lawnData ?? []).map((lawn) => {
+                      return (
+                        <Button
+                          key={lawn.id}
+                          variant={
+                            viewingLawn?.id === lawn.id ? 'gradient' : 'default'
+                          }
+                          w='100%'
+                          size='compact-xs'
+                          onClick={async () => {
+                            router.push(`/${lawn.id}`)
+                          }}
+                        >
+                          {lawn.properties.name}
+                        </Button>
+                      )
+                    })
+                  }
+                </Flex>
+              </Card>
+              {
+                viewingLawn &&
+                <EditLawnForm />
+              }
+              <NewLawnForm />
+            </Flex>
+          </Center>
         </Flex>
-        Search:
-        <ZipCodeSearch
-          zipCode={zipCode}
-          onZipCodeChange={(zipCode) => setZipCode(zipCode)}
-          onZipCodeSubmit={(zipCode) => handleZipCodeSubmitted(zipCode)}
-        />
       </AppShell.Navbar>
 
       <AppShell.Main

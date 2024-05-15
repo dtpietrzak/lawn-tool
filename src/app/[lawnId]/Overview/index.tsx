@@ -36,6 +36,7 @@ const Overview: FC<OverviewProps> = () => {
                   value={lastMow.meta.height.toFixed(2) ?? ''}
                   onSave={(value) => {
                     if (!viewingLawn?.id) return
+                    if (!lastMow?.id) return
                     if (isValidAmount(value)) {
                       updateEvent({
                         meta: {
@@ -73,7 +74,7 @@ const Overview: FC<OverviewProps> = () => {
         <Flex mt='lg'>
           <GrassGauge
             dataByDateArray={transformedData.dataByDateArray}
-            lastMowHeight={lastMow?.meta.height}
+            cutHeight={viewingLawn?.properties.mow}
           />
         </Flex>
       </Card>
@@ -160,13 +161,13 @@ const RainGauge: FC<RainGaugeProps> = ({
 
 type GrassGaugeProps = {
   dataByDateArray?: DateDataArray
-  lastMowHeight?: number
+  cutHeight?: number
 }
 
 const GrassGauge: FC<GrassGaugeProps> = ({
-  dataByDateArray, lastMowHeight,
+  dataByDateArray, cutHeight,
 }) => {
-  if (!dataByDateArray || !lastMowHeight) {
+  if (!dataByDateArray || !cutHeight) {
     return <>Loading...</>
   }
 
@@ -188,10 +189,10 @@ const GrassGauge: FC<GrassGaugeProps> = ({
         justify='space-between'
       >
         <Text size="xs" c='green' opacity={0.5}>
-          Last Cut
+          Cut Height
         </Text>
         <Text size="xs" c="green">
-          {`${lastMowHeight}"`}
+          {`${cutHeight}"`}
         </Text>
       </Flex>
       {
@@ -200,7 +201,7 @@ const GrassGauge: FC<GrassGaugeProps> = ({
           if (!data.growth.agdu) return null
 
           const agduQuarter = parseFloat(data.growth.agdu) / 4
-          const oneThird = lastMowHeight / 3
+          const oneThird = cutHeight / 3
           const ratioToCut = (agduQuarter / oneThird)
           const percentToCut = (ratioToCut * 100).toFixed(0)
 

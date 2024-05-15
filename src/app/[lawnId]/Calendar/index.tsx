@@ -1,7 +1,7 @@
 import { FC } from "react";
 import TabContainer from "../_components/tabs/TabContainer";
 import useWeatherData from "@/_hooks/useWeatherData";
-import { Card, Center } from "@mantine/core";
+import { Card } from "@mantine/core";
 import { Calendar as BigCal, dateFnsLocalizer } from 'react-big-calendar'
 import format from 'date-fns/format'
 import parse from 'date-fns/parse'
@@ -29,12 +29,19 @@ const Calendar: FC<CalendarProps> = () => {
         <BigCal
           localizer={localizer}
           style={{
-            height: 400,
+            height: 360,
             width: "100%",
           }}
           defaultDate={new Date()}
           defaultView="month"
           toolbar={false}
+          components={{
+            day: {
+              event: ({
+                event, title
+              }) => <>poop{title}</>
+            }
+          }}
         />
       </Card>
     </TabContainer>
