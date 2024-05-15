@@ -2,7 +2,7 @@
 
 import { WeatherData } from '@/app/api/tools/requests'
 import { useLocalStorage } from '@mantine/hooks'
-import { FC, createContext, useCallback, useContext, useEffect, useMemo } from 'react'
+import { FC, createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { testData } from '@/__tests__/testWeatherData'
 import { notifications } from '@mantine/notifications'
 import { Flex, Text } from '@mantine/core'
@@ -81,7 +81,7 @@ export const WeatherDataProvider: FC<WeatherDataProviderProps> = ({
 
   const [weatherData, setWeatherData] = useLocalStorage<WeatherData>({
     key: `weather-data-${zipcode}`,
-    defaultValue: testData,
+    defaultValue: defaultWeatherData,
   })
 
   const handleWeatherDataUpdate = useCallback(async (zip_code?: string) => {
@@ -138,7 +138,7 @@ export const WeatherDataProvider: FC<WeatherDataProviderProps> = ({
     let weeklyMaxTemp: number | undefined = undefined
     let accumulatedHeight = 0
 
-    weatherData.noaa.forecast.periods.forEach((period) => {
+    weatherData?.noaa?.forecast?.periods.forEach((period) => {
       const formattedDate = formatDate(period.startTime)
       if (!formattedDate) return
       if (!period.temperature.value) return

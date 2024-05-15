@@ -31,7 +31,7 @@ export type LawnEventMeta<T extends LawnEventType = LawnEventType> =
   : never
 
 export type LawnEvent<T extends LawnEventType = LawnEventType> = {
-  id: string
+  id?: string
   datetime: Date
 } & LawnEventMeta<T>
 
@@ -42,19 +42,25 @@ export type Note = {
   order: number
 }
 
+export type LawnProperties = {
+  name: string
+  size: number
+  zipcode: string
+  mow: number
+}
+
+export type NewLawnData = {
+  events: Record<string, LawnEvent>
+  notes: Record<string, Note>
+  properties: LawnProperties
+}
+
 export type LawnData = {
   id: string
   owner: string
-  events: Record<string, LawnEvent>
-  notes: Record<string, Note>
-  properties: {
-    name: string
-    size: number
-    zipcode: string
-  }
-}
+} & NewLawnData
 
-const defaultLawnData: LawnData = {
+export const defaultLawnData: LawnData = {
   id: '',
   owner: '',
   events: {},
@@ -63,6 +69,7 @@ const defaultLawnData: LawnData = {
     name: '',
     size: 1,
     zipcode: '',
+    mow: 3,
   }
 }
 
@@ -75,7 +82,7 @@ export type LawnDataContextType = {
   notesArray?: Readonly<Note[]>
   addLawnData: (
     lawn_data: Partial<LawnData>,
-  ) => Promise<void>
+  ) => Promise<DocumentReference<DocumentData>>
   /**
   * sets the lawn data locally, like React setState
   * @param lawnData 
@@ -128,7 +135,10 @@ export type LawnDataContextType = {
     event_id: string,
     lawn_id: string,
   ) => Promise<void>
-
+  deleteEvent: (
+    event_id: string,
+    lawn_id: string,
+  ) => Promise<void>
 }
 
 export const defaultContext: LawnDataContextType = {
@@ -164,6 +174,9 @@ export const defaultContext: LawnDataContextType = {
   },
   updateEvent: (_) => {
     throw new Error('Attempting updateEvent before it was initialized')
+  },
+  deleteEvent: (_) => {
+    throw new Error('Attempting deleteEvent before it was initialized')
   },
 }
 
@@ -204,6 +217,7 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
     idField: 'id',
     initialData: undefined,
   })
+
   const [lawnData, _setLawnData] = useState<LawnData[] | undefined>(data)
   useEffect(() => { _setLawnData(data as LawnData[]) }, [data])
 
@@ -212,7 +226,7 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
   ) => {
     try {
       const docRef = collection(firestore, 'lawns')
-      await addDoc(docRef, lawn_data)
+      return await addDoc(docRef, lawn_data)
     } catch (err: any) {
       throw new Error(err)
     }
@@ -259,10 +273,20 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
     note_data: Exclude<Note, 'id'>,
     lawn_id: LawnData['id'],
   ) => {
-    const newId = doc(firestore, `lawns/${lawn_id}/notes`).id
-    const docRef = doc(firestore, `lawns/${lawn_id}/notes/${newId}`)
-    await setDoc(docRef, note_data)
-  }, [firestore])
+    const newId = doc(firestore, `lawns/${lawn_id}`).id
+    const docRef = doc(firestore, `lawns/${lawn_id}`)
+    const [prev_lawn] = arrays.getElement(lawnData, lawn_id,
+      'addNote'
+    )
+    const new_lawn = {
+      ...prev_lawn,
+      notes: {
+        [newId]: note_data,
+        ...prev_lawn.notes,
+      }
+    }
+    await updateDoc(docRef, new_lawn)
+  }, [firestore, lawnData])
 
   const setNoteData = useCallback((
     note_data: Partial<Note>,
@@ -272,9 +296,6 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
     const [prev_lawn, prev_lawn_i] = arrays.getElement(lawnData, lawn_idi,
       'setNoteData'
     )
-    if (!prev_lawn.notes?.[note_id]) {
-      throw new Error('setNoteData was attempted on a note that doesn\'t exist')
-    }
     const new_lawn = objects.mergeDownTwo(
       prev_lawn, 'notes',
       note_data, note_id,
@@ -299,10 +320,20 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
     event_data: Exclude<LawnEvent, 'id'>,
     lawn_id: LawnData['id'],
   ) => {
-    const newId = doc(firestore, `lawns/${lawn_id}/events`).id
-    const docRef = doc(firestore, `lawns/${lawn_id}/events/${newId}`)
-    await setDoc(docRef, event_data)
-  }, [firestore])
+    const newId = doc(firestore, `lawns/${lawn_id}`).id
+    const docRef = doc(firestore, `lawns/${lawn_id}`)
+    const [prev_lawn] = arrays.getElement(lawnData, lawn_id,
+      'addEvent'
+    )
+    const new_lawn = {
+      ...prev_lawn,
+      events: {
+        [newId]: event_data,
+        ...prev_lawn.events,
+      }
+    }
+    await updateDoc(docRef, new_lawn)
+  }, [firestore, lawnData])
 
   const setEventData = useCallback(<T extends LawnEventType = LawnEventType>(
     event_data: Partial<LawnEvent<T>>,
@@ -312,9 +343,6 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
     const [prev_lawn, prev_lawn_i] = arrays.getElement(lawnData, lawn_idi,
       'setEventData'
     )
-    if (!prev_lawn.events?.[event_id]) {
-      throw new Error('setEventData was attempted on a note that doesn\'t exist')
-    }
     const new_lawn = objects.mergeDownTwo(
       prev_lawn, 'events',
       event_data, event_id,
@@ -336,6 +364,16 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
     const docRef = doc(firestore, `lawns/${lawn_id}`)
     await updateDoc(docRef, new_lawn_data)
   }, [firestore, setEventData])
+
+  const deleteEvent = useCallback(async (event_id: string, lawn_id: string) => {
+    const [prev_lawn, prev_lawn_i] = arrays.getElement(lawnData, lawn_id,
+      'deleteEvent'
+    )
+    const new_lawn = { ...prev_lawn }
+    delete new_lawn.events[event_id]
+    const docRef = doc(firestore, `lawns/${lawn_id}`)
+    await updateDoc(docRef, new_lawn)
+  }, [firestore, lawnData])
 
   const lawnDataContext: LawnDataContextType = useMemo(() => {
     const viewingLawn = deriveViewingLawn(lawnData, lawnId)
@@ -363,7 +401,7 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
       const _lastMowData: LawnEvent<'mow'> | undefined = eventsArray.find(
         (lawnEvent, i) => {
           _lastMowIndex = i
-          return lawnEvent.type !== 'mow'
+          return lawnEvent.type === 'mow'
         }
       ) as LawnEvent<'mow'>
 
@@ -404,8 +442,11 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
       addEvent: addEvent,
       setEventData: setEventData,
       updateEvent: updateEvent,
+      deleteEvent: deleteEvent,
     }
-  }, [addEvent, addLawnData, addNote, lawnData, lawnId, setEventData, setLawnData, setNoteData, updateEvent, updateLawnData, updateNote])
+  }, [addEvent, addLawnData, addNote, deleteEvent, lawnData, lawnId, setEventData, setLawnData, setNoteData, updateEvent, updateLawnData, updateNote])
+
+  console.log(lawnDataContext.lastMow)
 
   return (
     <LawnDataContext.Provider

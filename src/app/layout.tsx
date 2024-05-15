@@ -8,7 +8,7 @@ import '@mantine/dropzone/styles.css'
 import '@mantine/carousel/styles.css'
 import '@mantine/spotlight/styles.css'
 import '@mantine/nprogress/styles.css'
-import "react-big-calendar/lib/css/react-big-calendar.css"
+import "@/app/[lawnId]/Calendar/_components/cal.css"
 
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
