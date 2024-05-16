@@ -39,7 +39,8 @@
     "react-dom": "^18",
     "react-error-boundary": "^4.0.13",
     "reactfire": "^4.2.3",
-    "recharts": "^2.12.6"
+    "recharts": "^2.12.6",
+    "short-unique-id": "^5.2.0"
   },
   "devDependencies": {
     "@types/node": "^20",

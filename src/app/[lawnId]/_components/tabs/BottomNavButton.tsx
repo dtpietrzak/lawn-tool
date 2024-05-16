@@ -19,7 +19,7 @@ const BottomNavButton: FC<BottomNavButtonProps> = ({
     searchParams.set('tab', title.toLowerCase())
     const queryString = searchParams.toString()
     const newPathString = `${window.location.pathname}?${queryString}`
-    pushState(undefined, "", newPathString)
+    pushState(newPathString)
   }
 
   return (

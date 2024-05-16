@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation";
 
-export function pushState(data: any, unused: string, url?: string) {
-  window.history.pushState(data, unused, url);
+export function pushState(url?: string) {
+  window.history.pushState(undefined, "", url);
   // Dispatch a custom event after pushState
   const pushStateEvent = new CustomEvent('pushstate', {
-    detail: { data, unused, url }
+    detail: { url }
   });
   window.dispatchEvent(pushStateEvent);
 }

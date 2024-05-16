@@ -6,6 +6,7 @@ import { useFirestore, useFirestoreCollectionData } from 'reactfire'
 import useUserData from './useUserData'
 import { SetPartialableStateAction, SetPartialableStateWithId } from '@/app/types'
 import { Idi, arrays, objects } from '@/_tools/utils'
+import ShortUniqueId from 'short-unique-id'
 
 export type LawnEventType = 'mow' | 'fert'
 
@@ -273,7 +274,7 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
     note_data: Exclude<Note, 'id'>,
     lawn_id: LawnData['id'],
   ) => {
-    const newId = doc(firestore, `lawns/${lawn_id}`).id
+    const newId = new ShortUniqueId({ length: 24 }).rnd()
     const docRef = doc(firestore, `lawns/${lawn_id}`)
     const [prev_lawn] = arrays.getElement(lawnData, lawn_id,
       'addNote'
@@ -320,7 +321,7 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
     event_data: Exclude<LawnEvent, 'id'>,
     lawn_id: LawnData['id'],
   ) => {
-    const newId = doc(firestore, `lawns/${lawn_id}`).id
+    const newId = new ShortUniqueId({ length: 24 }).rnd()
     const docRef = doc(firestore, `lawns/${lawn_id}`)
     const [prev_lawn] = arrays.getElement(lawnData, lawn_id,
       'addEvent'
@@ -390,7 +391,7 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
       }))
       .sort((a, b) => {
         return (
-          a.datetime.getTime() - b.datetime.getTime()
+          b.datetime.getTime() - a.datetime.getTime()
         )
       }) : undefined
 
@@ -445,8 +446,6 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
       deleteEvent: deleteEvent,
     }
   }, [addEvent, addLawnData, addNote, deleteEvent, lawnData, lawnId, setEventData, setLawnData, setNoteData, updateEvent, updateLawnData, updateNote])
-
-  console.log(lawnDataContext.lastMow)
 
   return (
     <LawnDataContext.Provider

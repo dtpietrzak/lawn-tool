@@ -10,6 +10,7 @@ import { IconTrash } from "@tabler/icons-react";
 import { useDisclosure } from '@mantine/hooks'
 
 export type LawnProps = {
+  disabled?: boolean
 }
 
 const Lawn: FC<LawnProps> = () => {
@@ -35,6 +36,12 @@ const Lawn: FC<LawnProps> = () => {
     if (!lawnEventIdSelected) return
     await deleteEvent(lawnEventIdSelected, viewingLawn?.id)
   }
+
+  if (!lastMow) return (
+    <TabContainer>
+      <AddEventForm defaultOpen />
+    </TabContainer>
+  )
 
   return (
     <>

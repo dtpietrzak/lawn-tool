@@ -1,20 +1,27 @@
 'use client'
 
-import { FC } from "react"
+import { FC, useState } from "react"
 import { useRouter } from 'next/navigation'
 import useLawnData, { LawnProperties } from "@/_hooks/useLawnData"
-import { Card, TextInput, Button, Group, Title } from '@mantine/core'
+import { Card, TextInput, Button, Group } from '@mantine/core'
 import { useForm } from '@mantine/form'
 import { isValidAmount } from "@/_tools/utils"
 import useUserData from "@/_hooks/useUserData"
-import { Accordion } from '@mantine/core'
 import DropDownDrawer from "@/app/_components/DropDownDrawer"
 
-const NewLawnForm: FC = () => {
+export type NewLawnFormProps = {
+  defaultOpen?: boolean
+}
+
+const NewLawnForm: FC<NewLawnFormProps> = ({
+  defaultOpen,
+}) => {
 
   const { id: userId, updateUserData } = useUserData()
   const { addLawnData } = useLawnData()
   const router = useRouter()
+
+  const [loading, setLoading] = useState<boolean>(false)
 
   const form = useForm({
     mode: 'uncontrolled',
@@ -34,6 +41,7 @@ const NewLawnForm: FC = () => {
   });
 
   const handleSubmit = async (values: LawnProperties) => {
+    setLoading(true)
     try {
       const newLawn = await addLawnData({
         events: {},
@@ -48,11 +56,12 @@ const NewLawnForm: FC = () => {
     } catch (err) {
       console.error(err)
     }
+    setLoading(false)
   }
 
   return (
     <Card className="flex gap-3 max-w-96 w-full">
-      <DropDownDrawer title='Add New Lawn'>
+      <DropDownDrawer title='Add New Lawn' defaultOpen={defaultOpen}>
         <form
           onSubmit={form.onSubmit(handleSubmit)}
           className="flex flex-col gap-2"
@@ -86,7 +95,12 @@ const NewLawnForm: FC = () => {
             {...form.getInputProps('mow')}
           />
           <Group justify="flex-end" mt="md">
-            <Button type="submit">Add Lawn</Button>
+            <Button
+              type="submit"
+              loading={loading}
+            >
+              Add Lawn
+            </Button>
           </Group>
         </form>
       </DropDownDrawer>
