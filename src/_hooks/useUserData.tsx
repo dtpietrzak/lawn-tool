@@ -135,7 +135,7 @@ export type UserDataContext = {
 }
 
 const defaultUserData: UserData = {
-  viewingLawn: undefined,
+  viewingLawn: '',
   tabOptions: {
     forecast: {
       temps: true,

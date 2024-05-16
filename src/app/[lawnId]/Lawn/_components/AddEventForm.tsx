@@ -1,13 +1,23 @@
 'use client'
 
-import useLawnData, { LawnEvent } from "@/_hooks/useLawnData"
+import useLawnData, { LawnEvent, LawnEventType } from "@/_hooks/useLawnData"
 import { Card, Title, SegmentedControl, Text, NumberInput, Group, Button } from "@mantine/core"
 import { useForm } from "@mantine/form"
 import { DateTimePicker } from '@mantine/dates'
 import { FC } from "react"
 import DropDownDrawer from "@/app/_components/DropDownDrawer"
 
-const AddEventForm: FC = () => {
+export type AddEventFormProps = {
+  defaultOpen?: boolean
+  specifyEventType?: LawnEventType
+}
+
+const eventTypes = ['mow']
+
+const AddEventForm: FC<AddEventFormProps> = ({
+  defaultOpen,
+  specifyEventType,
+}) => {
   const { addEvent, viewingLawn } = useLawnData()
 
   const form = useForm({
@@ -23,17 +33,18 @@ const AddEventForm: FC = () => {
 
   const handleSubmit = async (values: any) => {
     if (viewingLawn?.id) {
-      await addEvent({
+      const newEventData = {
         type: 'mow',
         datetime: values.datetime,
         meta: values.meta
-      }, viewingLawn?.id)
+      } satisfies LawnEvent
+      await addEvent(newEventData, viewingLawn?.id)
     }
   }
 
   return (
     <Card>
-      <DropDownDrawer title="Add Event">
+      <DropDownDrawer title="Add Event" defaultOpen={defaultOpen}>
         <form
           onSubmit={form.onSubmit(handleSubmit)}
           className="flex flex-col gap-2"
@@ -42,7 +53,7 @@ const AddEventForm: FC = () => {
             Event Type
           </Text>
           <SegmentedControl
-            data={['mow']}
+            data={specifyEventType ? [specifyEventType] : eventTypes}
             key={form.key('type')}
             {...form.getInputProps('type')}
           />

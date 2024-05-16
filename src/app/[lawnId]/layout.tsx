@@ -1,6 +1,6 @@
 'use client'
 
-import { AppShell, Burger, Flex, Title, Text, rem, Divider, Center, Card, Button } from '@mantine/core';
+import { AppShell, Burger, Flex, Title, Text, rem, Divider, Center, Card, Button, ScrollArea } from '@mantine/core';
 import { useDisclosure, useHeadroom, useWindowScroll } from '@mantine/hooks';
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
