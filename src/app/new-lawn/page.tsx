@@ -1,11 +1,11 @@
-'use client'
-
 import NewLawnForm from '@/app/_components/NewLawnForm'
+import ExistingLawnsSelection from '../_components/ExistingLawnsSelector'
 
 export default function Page() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-2">
       <NewLawnForm defaultOpen />
+      <ExistingLawnsSelection />
     </main>
   )
 }

@@ -19,7 +19,12 @@ export const getLatLongByZip = async (zip_code: string) => {
 
   const country_code = 'US'
 
-  const lat_long_response = await ezFetchGET<T.OwmLocation>(`http://api.openweathermap.org/geo/1.0/zip?zip=${zip_code},${country_code}&appid=${api_key}`)
+  const lat_long_response = await ezFetchGET<T.OwmLocation>(
+    `http://api.openweathermap.org/geo/1.0/zip?zip=${zip_code},${country_code}&appid=${api_key}`, {
+    // why not cache lat long heavily? it shouldn't really change per zip lol
+    next: { revalidate: 60 * 60 * 24 * 3 }
+  }
+  )
   if (isFetchError(lat_long_response)) return
 
   return {
@@ -30,7 +35,11 @@ export const getLatLongByZip = async (zip_code: string) => {
 }
 
 const getNoaaData = async (lat: string, long: string) => {
-  const noaa_grid_point = await ezFetchGET<T.NoaaGridPoint>(`https://api.weather.gov/points/${lat},${long}`)
+  const noaa_grid_point = await ezFetchGET<T.NoaaGridPoint>(
+    `https://api.weather.gov/points/${lat},${long}`, {
+    next: { revalidate: 60 * 15 } // 15 min
+  }
+  )
   if (isFetchError(noaa_grid_point)) return
 
   const forecast = await ezFetchGET<T.NoaaForecast>(
@@ -62,7 +71,9 @@ const getTomorrowIoData = async (zip_code: string) => {
   const api_key = process.env.API_TOMORROW_IO || ''
 
   const forecast = await ezFetchGET(
-    `https://api.tomorrow.io/v4/weather/forecast?location=${zip_code} US&apikey=${api_key}`,
+    `https://api.tomorrow.io/v4/weather/forecast?location=${zip_code} US&apikey=${api_key}`, {
+    next: { revalidate: 60 * 15 } // 15 min
+  }
   )
   if (isFetchError(forecast)) return
 
@@ -79,12 +90,16 @@ const getWeatherApiData = async (zip_code: string) => {
   const yesterday = format(subDays(date, 1), 'yyyy-MM-dd')
 
   const history = await ezFetchGET<T.WeatherApi>(
-    `http://api.weatherapi.com/v1/history.json?key=${api_key}&dt=${sevenBack}&end_dt=${yesterday}&q=${zip_code}`
+    `http://api.weatherapi.com/v1/history.json?key=${api_key}&dt=${sevenBack}&end_dt=${yesterday}&q=${zip_code}`, {
+    next: { revalidate: 60 * 15 } // 15 min
+  }
   )
   if (isFetchError(history)) return
 
   const forecast = await ezFetchGET<T.WeatherApi>(
-    `http://api.weatherapi.com/v1/forecast.json?key=${api_key}&days=7&q=${zip_code}`
+    `http://api.weatherapi.com/v1/forecast.json?key=${api_key}&days=7&q=${zip_code}`, {
+    next: { revalidate: 60 * 15 } // 15 min
+  }
   )
   if (isFetchError(forecast)) return
 

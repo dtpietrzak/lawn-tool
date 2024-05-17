@@ -3,6 +3,10 @@
   "rules": {
     "react-hooks/exhaustive-deps": ["warn", {
       "additionalHooks": "useRouteGuard"
-    }]
-  }
+    }],
+    "react-compiler/react-compiler": "warn"
+  },
+  "plugins": [
+    "eslint-plugin-react-compiler"
+  ]
 }

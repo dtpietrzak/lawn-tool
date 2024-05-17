@@ -1,8 +1,7 @@
 'use client'
 
-import { AppShell, Burger, Flex, Title, Text, rem, Divider, Center, Card, Button, ScrollArea } from '@mantine/core';
+import { AppShell, Burger, Flex, Title, Text, rem, Divider, Center } from '@mantine/core';
 import { useDisclosure, useHeadroom, useWindowScroll } from '@mantine/hooks';
-import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { IconCalendarEvent, IconDashboard, IconNotebook, IconPlant2, IconSun, IconX } from '@tabler/icons-react';
 import BottomNavButton from './_components/tabs/BottomNavButton';
@@ -14,6 +13,7 @@ import { UserButton } from '@clerk/nextjs'
 import useLawnData from '@/_hooks/useLawnData';
 import NewLawnForm from '@/app/_components/NewLawnForm'
 import EditLawnForm from '../_components/EditLawnForm';
+import ExistingLawnsSelection from '../_components/ExistingLawnsSelector';
 
 const topNavHeight = 50
 
@@ -22,21 +22,20 @@ export default function Layout({
 }: {
   children: React.ReactNode
 }) {
-  const router = useRouter()
   const params = useParams<UrlParams>()
   const pinned = useHeadroom({ fixedAt: 120 })
   const [scroll] = useWindowScroll()
 
   const { auth, updateUserData } = useUserData()
-  const { lawnData, viewingLawn } = useLawnData()
+  const { lawnArray, viewingLawn } = useLawnData()
 
   useRouteGuard(async () => {
     // if there's no lawn data, go to new-lawn
     if (!auth.isLockedAndLoaded) return
-    if (!lawnData) return
-    if (lawnData.length === 0) return '/new-lawn'
+    if (!lawnArray) return
+    if (lawnArray.length === 0) return '/new-lawn'
     if (viewingLawn?.id !== params.lawnId) {
-      const shouldBeViewingLawn = lawnData.find((lawn) => {
+      const shouldBeViewingLawn = lawnArray.find((lawn) => {
         return lawn.id === params.lawnId
       })
       if (shouldBeViewingLawn) {
@@ -45,7 +44,7 @@ export default function Layout({
         return '/new-lawn'
       }
     }
-  }, [auth.isLockedAndLoaded, lawnData, params.lawnId, updateUserData, viewingLawn?.id], 'app/zipcode/layout')
+  }, [auth.isLockedAndLoaded, lawnArray, params.lawnId, updateUserData, viewingLawn?.id], 'app/zipcode/layout')
 
   const [opened, { toggle }] = useDisclosure();
 
@@ -112,32 +111,7 @@ export default function Layout({
           </Flex>
           <Center className='w-full'>
             <Flex direction='column' gap='lg' w='full'>
-              <Card className='flex gap-3 max-w-96 w-full'>
-                <Title size="h4">
-                  My Lawns
-                </Title>
-                <Flex w="100%" direction='column' gap='xs'>
-                  {
-                    (lawnData ?? []).map((lawn) => {
-                      return (
-                        <Button
-                          key={lawn.id}
-                          variant={
-                            viewingLawn?.id === lawn.id ? 'gradient' : 'default'
-                          }
-                          w='100%'
-                          size='compact-xs'
-                          onClick={async () => {
-                            router.push(`/${lawn.id}`)
-                          }}
-                        >
-                          {lawn.properties.name}
-                        </Button>
-                      )
-                    })
-                  }
-                </Flex>
-              </Card>
+              <ExistingLawnsSelection />
               {
                 viewingLawn &&
                 <EditLawnForm />

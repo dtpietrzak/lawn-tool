@@ -18,12 +18,6 @@ export const ezFetchGET = async <T = unknown>(url: string, options?: RequestInit
     delete options.noaaFeatureFlags
   }
 
-  if (options?.cache) {
-
-  } else {
-    options.cache = 'no-cache'
-  }
-
   return fetch(url, options).then(async (res) => {
     if (res.status !== 200) {
       const errorResponse = await res?.json()
