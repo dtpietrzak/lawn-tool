@@ -8,21 +8,21 @@ import { Button, Center, Flex, Space, Text, Title } from "@mantine/core"
 
 export default function Home() {
   const { auth } = useUserData()
-  const { lawnData, viewingLawn } = useLawnData()
+  const { lawnArray, viewingLawn } = useLawnData()
 
   useRouteGuard(() => {
     if (auth.isLockedAndLoaded) {
-      if (lawnData?.length) {
+      if (lawnArray?.length) {
         if (viewingLawn?.id) {
           return `/${viewingLawn.id}`
-        } else if (lawnData?.[0]?.id) {
-          return `/${lawnData[0].id}`
+        } else if (lawnArray?.[0]?.id) {
+          return `/${lawnArray[0].id}`
         }
       } else {
         return '/new-lawn'
       }
     }
-  }, [auth.isLockedAndLoaded, lawnData, viewingLawn?.id], 'app/page')
+  }, [auth.isLockedAndLoaded, lawnArray, viewingLawn?.id], 'app/page')
 
   return (
     <main className="flex min-h-screen h-screen flex-col gap-2">
