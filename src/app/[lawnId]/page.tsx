@@ -11,20 +11,29 @@ import Notes from "./Notes"
 import useSearchParamsPush from "../../_hooks/useSearchParamsPush"
 import { WeatherDataProvider } from "@/_hooks/useWeatherData"
 import useLawnData from "@/_hooks/useLawnData"
-import useRouteGuard from "@/_hooks/useRouteGuard"
+import useUserData from "@/_hooks/useUserData"
+import { useEffect } from "react"
 
 export default function Dashboard() {
-  const { lastMow } = useLawnData()
+  const { auth } = useUserData()
+  const { lastMow, lawnArray } = useLawnData()
   const { searchParams, pushState } = useSearchParamsPush()
 
-  if (searchParams.get('tab') !== 'lawn') {
-    if (!lastMow) {
-      searchParams.set('tab', 'lawn')
-      const queryString = searchParams.toString()
-      const newPathString = `${window.location.pathname}?${queryString}`
-      pushState(newPathString)
+  useEffect(() => {
+    if (searchParams.get('tab') !== 'lawn') {
+      if (
+        !lastMow &&
+        lawnArray &&
+        auth.isLockedAndLoaded
+        && window?.location?.pathname
+      ) {
+        searchParams.set('tab', 'lawn')
+        const queryString = searchParams.toString()
+        const newPathString = `${window.location.pathname}?${queryString}`
+        pushState(newPathString)
+      }
     }
-  }
+  }, [auth.isLockedAndLoaded, lastMow, lawnArray, pushState, searchParams])
 
   return (
     <main className="flex min-h-screen w-full flex-col items-center justify-between">

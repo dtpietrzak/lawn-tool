@@ -1,10 +1,10 @@
 'use client'
 
-import { collection, query, where, getDoc, DocumentReference, and, FirestoreDataConverter, QueryDocumentSnapshot, DocumentData, setDoc, doc, SetOptions, PartialWithFieldValue, updateDoc, addDoc } from 'firebase/firestore'
-import { Dispatch, FC, SetStateAction, createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { collection, query, where, DocumentReference, FirestoreDataConverter, DocumentData, doc, PartialWithFieldValue, updateDoc, addDoc } from 'firebase/firestore'
+import { FC, createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useFirestore, useFirestoreCollectionData } from 'reactfire'
 import useUserData from './useUserData'
-import { SetPartialableStateAction, SetPartialableStateWithId } from '@/app/types'
+import { SetPartialableStateAction } from '@/app/types'
 import { Idi, arrays, objects } from '@/_tools/utils'
 import ShortUniqueId from 'short-unique-id'
 
@@ -77,7 +77,7 @@ export const defaultLawnData: LawnData = {
 export type LawnDataContextType = {
   lastMow?: Readonly<LawnEvent<'mow'> & { index: number }> | undefined
   lawnList?: readonly string[]
-  lawnData?: Readonly<LawnData[]>
+  lawnArray?: Readonly<LawnData[]>
   viewingLawn?: Readonly<LawnData> | undefined
   eventsArray?: Readonly<LawnEvent[]>
   notesArray?: Readonly<Note[]>
@@ -145,7 +145,7 @@ export type LawnDataContextType = {
 export const defaultContext: LawnDataContextType = {
   lastMow: undefined,
   lawnList: undefined,
-  lawnData: undefined,
+  lawnArray: undefined,
   viewingLawn: undefined,
   eventsArray: undefined,
   notesArray: undefined,
@@ -214,13 +214,13 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
     lawnsCollection, where('owner', '==', userId),
   )
 
-  const { data } = useFirestoreCollectionData<LawnData>(lawnsQuery, {
+  const { data, status } = useFirestoreCollectionData<LawnData>(lawnsQuery, {
     idField: 'id',
     initialData: undefined,
   })
 
-  const [lawnData, _setLawnData] = useState<LawnData[] | undefined>(data)
-  useEffect(() => { _setLawnData(data as LawnData[]) }, [data])
+  const [lawnArray, setLawnArray] = useState<LawnData[] | undefined>(data)
+  useEffect(() => { setLawnArray(data as LawnData[]) }, [data])
 
   const addLawnData = useCallback(async (
     lawn_data: Partial<LawnData>,
@@ -237,8 +237,8 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
     lawn_data: SetPartialableStateAction<LawnData>,
     idi: Idi,
   ) => {
-    _setLawnData((prev) => {
-      if (!prev) throw new Error('setLawnData was used before lawnData was initialized')
+    setLawnArray((prev) => {
+      if (!prev) throw new Error('setLawnData was used before lawnArray was initialized')
 
       let [prev_lawn, prev_lawn_i] = arrays.getElement(prev, idi)
 
@@ -274,9 +274,9 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
     note_data: Exclude<Note, 'id'>,
     lawn_id: LawnData['id'],
   ) => {
-    const newId = new ShortUniqueId({ length: 24 }).rnd()
+    const newId = new ShortUniqueId({ length: 20 }).rnd()
     const docRef = doc(firestore, `lawns/${lawn_id}`)
-    const [prev_lawn] = arrays.getElement(lawnData, lawn_id,
+    const [prev_lawn] = arrays.getElement(lawnArray, lawn_id,
       'addNote'
     )
     const new_lawn = {
@@ -287,14 +287,14 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
       }
     }
     await updateDoc(docRef, new_lawn)
-  }, [firestore, lawnData])
+  }, [firestore, lawnArray])
 
   const setNoteData = useCallback((
     note_data: Partial<Note>,
     note_id: string,
     lawn_idi: Idi,
   ): [LawnData, number] => {
-    const [prev_lawn, prev_lawn_i] = arrays.getElement(lawnData, lawn_idi,
+    const [prev_lawn, prev_lawn_i] = arrays.getElement(lawnArray, lawn_idi,
       'setNoteData'
     )
     const new_lawn = objects.mergeDownTwo(
@@ -303,7 +303,7 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
     )
     setLawnData(new_lawn, prev_lawn_i)
     return [new_lawn, prev_lawn_i]
-  }, [lawnData, setLawnData])
+  }, [lawnArray, setLawnData])
 
   const updateNote = useCallback(async (
     note_data: Partial<Note>,
@@ -321,9 +321,9 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
     event_data: Exclude<LawnEvent, 'id'>,
     lawn_id: LawnData['id'],
   ) => {
-    const newId = new ShortUniqueId({ length: 24 }).rnd()
+    const newId = new ShortUniqueId({ length: 20 }).rnd()
     const docRef = doc(firestore, `lawns/${lawn_id}`)
-    const [prev_lawn] = arrays.getElement(lawnData, lawn_id,
+    const [prev_lawn] = arrays.getElement(lawnArray, lawn_id,
       'addEvent'
     )
     const new_lawn = {
@@ -334,14 +334,14 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
       }
     }
     await updateDoc(docRef, new_lawn)
-  }, [firestore, lawnData])
+  }, [firestore, lawnArray])
 
   const setEventData = useCallback(<T extends LawnEventType = LawnEventType>(
     event_data: Partial<LawnEvent<T>>,
     event_id: string,
     lawn_idi: Idi,
   ): [LawnData, number] => {
-    const [prev_lawn, prev_lawn_i] = arrays.getElement(lawnData, lawn_idi,
+    const [prev_lawn, prev_lawn_i] = arrays.getElement(lawnArray, lawn_idi,
       'setEventData'
     )
     const new_lawn = objects.mergeDownTwo(
@@ -350,7 +350,7 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
     )
     setLawnData(new_lawn, prev_lawn_i)
     return [new_lawn, prev_lawn_i]
-  }, [lawnData, setLawnData])
+  }, [lawnArray, setLawnData])
 
   const updateEvent = useCallback(async <
     T extends LawnEventType = LawnEventType
@@ -367,20 +367,20 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
   }, [firestore, setEventData])
 
   const deleteEvent = useCallback(async (event_id: string, lawn_id: string) => {
-    const [prev_lawn, prev_lawn_i] = arrays.getElement(lawnData, lawn_id,
+    const [prev_lawn] = arrays.getElement(lawnArray, lawn_id,
       'deleteEvent'
     )
     const new_lawn = { ...prev_lawn }
     delete new_lawn.events[event_id]
     const docRef = doc(firestore, `lawns/${lawn_id}`)
     await updateDoc(docRef, new_lawn)
-  }, [firestore, lawnData])
+  }, [firestore, lawnArray])
 
   const lawnDataContext: LawnDataContextType = useMemo(() => {
-    const viewingLawn = deriveViewingLawn(lawnData, lawnId)
+    const viewingLawn = deriveViewingLawn(lawnArray, lawnId)
 
     const lawnList: Readonly<string[]> | undefined =
-      lawnData ? lawnData.map((lawn) => lawn.id) : undefined
+      lawnArray ? lawnArray.map((lawn) => lawn.id) : undefined
 
     const eventsArray: Readonly<LawnEvent[]> | undefined = viewingLawn ? Object.entries(viewingLawn.events)
       .map(([key, lawnEvent]) => ({
@@ -427,7 +427,7 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
       viewingLawn: viewingLawn,
       lastMow: lastMow,
       lawnList: lawnList,
-      lawnData: lawnData,
+      lawnArray: lawnArray,
 
       eventsArray: eventsArray,
       notesArray: notesArray,
@@ -445,7 +445,7 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
       updateEvent: updateEvent,
       deleteEvent: deleteEvent,
     }
-  }, [addEvent, addLawnData, addNote, deleteEvent, lawnData, lawnId, setEventData, setLawnData, setNoteData, updateEvent, updateLawnData, updateNote])
+  }, [addEvent, addLawnData, addNote, deleteEvent, lawnArray, lawnId, setEventData, setLawnData, setNoteData, updateEvent, updateLawnData, updateNote])
 
   return (
     <LawnDataContext.Provider
@@ -456,11 +456,11 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
   )
 }
 
-const deriveViewingLawn = (lawnData?: LawnData[], lawnId?: LawnData['id']) => {
-  if (!lawnData) return undefined
-  if (lawnData.length === 0) return undefined
+const deriveViewingLawn = (lawnArray?: LawnData[], lawnId?: LawnData['id']) => {
+  if (!lawnArray) return undefined
+  if (lawnArray.length === 0) return undefined
   if (!lawnId) return undefined
-  let viewingLawn = lawnData.find((lawn) => lawn.id === lawnId)
+  let viewingLawn = lawnArray.find((lawn) => lawn.id === lawnId)
   if (!viewingLawn) return undefined
   return Object.freeze(viewingLawn)
 }

@@ -76,16 +76,16 @@ const Lawn: FC<LawnProps> = () => {
               <Card key={lawnEvent.id}>
                 <Flex justify='space-between'>
                   <div>
-                    <Title>
+                    <Title size="h4">
                       {lawnEvent.type}
                     </Title>
-                    <Text>
+                    <Text size="xs">
                       {lawnEvent.datetime.toDateString()}
                     </Text>
                     {
                       Object.entries(lawnEvent.meta).map(([key, value], i) => {
                         return (
-                          <Text key={i}>
+                          <Text key={i} size="xs">
                             {key}: {value}
                           </Text>
                         )

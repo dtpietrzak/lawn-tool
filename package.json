@@ -30,6 +30,7 @@
     "@tiptap/starter-kit": "^2.3.0",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.0.2",
+    "eslint-plugin-react-compiler": "^0.0.0-experimental-53bb89e-20240515",
     "fast-xml-parser": "^4.3.6",
     "firebase": "^9.23.0",
     "isobject": "^4.0.0",

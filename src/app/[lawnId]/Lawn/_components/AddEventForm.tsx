@@ -26,7 +26,7 @@ const AddEventForm: FC<AddEventFormProps> = ({
       type: 'mow',
       datetime: new Date(new Date().setHours(12, 0, 0, 0)),
       meta: {
-        height: 0,
+        height: viewingLawn?.properties.mow ?? 0,
       },
     }
   })
