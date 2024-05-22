@@ -206,7 +206,7 @@ export const LawnDataProvider: FC<LawnDataProviderProps> = ({
   lawnId,
   children,
 }) => {
-  const { id: userId } = useUserData()
+  const { userId } = useUserData()
   const firestore = useFirestore()
   const lawnsCollection = collection(firestore, 'lawns')
     .withConverter(lawnDataConverter)

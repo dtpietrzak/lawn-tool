@@ -7,13 +7,13 @@ import { testData } from '@/__tests__/testWeatherData'
 import { notifications } from '@mantine/notifications'
 import { Flex, Text } from '@mantine/core'
 import { IconX } from '@tabler/icons-react'
-import { DateDataArray, DateDataObject, WeeklyData } from '@/app/types'
-import { formatDate } from '@/_tools/formatters'
+import { DateDataArray, DateDataObject, NoaaPeriod, WeeklyData } from '@/app/types'
+import { formatDate, wipeTimezone } from '@/_tools/formatters'
 import { DeepSetter, getValidatedZip } from '@/_tools/utils'
 import { getDailyGdd, getF } from '@/_tools/formulae'
 import useLawnData from './useLawnData'
 import { WeatherApiForecastDay } from '@/app/api/tools/requests_types'
-import { differenceInMinutes, parse } from 'date-fns'
+import { differenceInMinutes, format, parse } from 'date-fns'
 
 const GET_ON_DEV = true;
 
@@ -133,14 +133,18 @@ export const WeatherDataProvider: FC<WeatherDataProviderProps> = ({
       }
     }
 
-    const history = weatherData.weatherApi
+    const weatherApiHistory = weatherData.weatherApi
       .history.forecast.forecastday
-    const forecast = weatherData.weatherApi
+      .map((day) => mapWeatherApi(day, 'cool', 'past'))
+    const weatherApiForecast = weatherData.weatherApi
       .forecast.forecast.forecastday
-    const all = [...history, ...forecast]
-      .sort((a, b) => a.date_epoch - b.date_epoch)
+      .map((day) => mapWeatherApi(day, 'cool', 'future'))
+    const weatherApiMapped = [...weatherApiHistory, ...weatherApiForecast]
+      .sort((a, b) => a.epoch - b.epoch)
 
-    const weatherApiMapped: WeatherApiMappedData[] = all.map((day) => mapWeatherApi(day, 'cool'))
+    const noaaMapped = convertAndMapNoaa(weatherData.noaa.forecast.periods)
+
+    console.log(noaaMapped)
 
     let dataHashedByDate: DateDataObject = {}
     let internalData: Record<string, {
@@ -277,7 +281,7 @@ const notificationOptions = {
 
 const fetchWeatherUpdate = async (zip_code: string) => {
   return fetch(`/api/weather-data/${zip_code}`, {
-    next: { revalidate: 60 } // 60 seconds
+    cache: 'no-cache',
   })
     .then((data) => data.json())
     .then((data) => {
@@ -294,6 +298,8 @@ const fetchWeatherUpdate = async (zip_code: string) => {
 
 
 export type WeatherApiMappedData = {
+  pastOrFuture: 'past' | 'future',
+  dateString: string,
   epoch: number;
   high: number;
   low: number;
@@ -301,12 +307,85 @@ export type WeatherApiMappedData = {
   gdd_v2: number;
   agdu_p1: number;
   rain: number;
+  rainWill: number;
+  rainChance: number;
+}
+
+export type MappedDataItem = {
+  pastOrFuture: 'past' | 'future'
+  dateString: string | null
+  epoch: number | null
+  high: number | null
+  low: number | null
+  avg?: number
+  gdd_v2?: number
+  agdu_p1?: number
+  rain?: number
+  rainWill?: number
+  rainChance: number | null
+}
+
+const convertAndMapNoaa = (
+  periodArray: NoaaPeriod[],
+) => {
+  let combiner: Record<string, NoaaPeriod[]> = {}
+  let combound: MappedDataItem[];
+
+  for (let i = 0; i < periodArray.length; i++) {
+    const dateAsKey = format(wipeTimezone(periodArray[i].startTime), 'yyMMdd')
+
+    if (!combiner[dateAsKey]) {
+      combiner[dateAsKey] = [periodArray[i]]
+    } else {
+      combiner[dateAsKey] = [...combiner[dateAsKey], periodArray[i]]
+    }
+  }
+
+  combound = Object.values(combiner).map((periodSet) => {
+    const data: MappedDataItem = {
+      pastOrFuture: 'future',
+      dateString: null,
+      epoch: null,
+      high: null,
+      low: null,
+      rainChance: null,
+    }
+
+    // date stuff
+    data['dateString'] = format(wipeTimezone(periodSet[0].startTime), 'MM-dd-yy hh:mm a')
+    data['epoch'] = new Date(wipeTimezone(periodSet[0].startTime)).getTime()
+
+    let rainChance: number = 0
+
+    periodSet.forEach((period) => {
+      if (period.isDaytime === true) {
+        // temp stuff
+        data['high'] = period.temperature.unitCode === 'wmoUnit:degC' ?
+          getF(period.temperature.value) : period.temperature.value
+        // rainChance - ensures the highest rainchance is always chosen
+        const _rainChance = period.probabilityOfPrecipitation.value ?? 0
+        rainChance = _rainChance > rainChance ? rainChance : _rainChance
+      } else if (period.isDaytime === false) {
+        // temp stuff
+        data['low'] = period.temperature.unitCode === 'wmoUnit:degC' ?
+          getF(period.temperature.value) : period.temperature.value
+        // rainChance - ensures the highest rainchance is always chosen
+        const _rainChance = period.probabilityOfPrecipitation.value ?? 0
+        rainChance = _rainChance > rainChance ? rainChance : _rainChance
+      }
+    })
+
+    return data
+  })
+
+  return combound
 }
 
 
 const mapWeatherApi = (
   day: WeatherApiForecastDay,
   seasonType: 'warm' | 'cool',
+  pastOrFuture: 'past' | 'future',
 ) => {
   const gdd_v2 = getGDDv2(
     day.day.maxtemp_f,
@@ -325,13 +404,17 @@ const mapWeatherApi = (
   )
 
   return ({
-    epoch: day.date_epoch * 1000,
+    pastOrFuture: pastOrFuture,
+    dateString: format(wipeTimezone(day.date_epoch * 1000), 'MM-dd-yy hh:mm a'),
+    epoch: new Date(wipeTimezone(day.date_epoch * 1000)).getTime(),
     high: day.day.maxtemp_f,
     low: day.day.mintemp_f,
     avg: day.day.avgtemp_f,
     gdd_v2: gdd_v2,
     agdu_p1: agdu_p1,
     rain: day.day.totalprecip_in,
+    rainWill: day.day.daily_will_it_rain,
+    rainChance: day.day.daily_chance_of_rain,
   })
 }
 

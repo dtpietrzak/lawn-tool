@@ -9,6 +9,7 @@ import { doc } from 'firebase/firestore'
 import { notifications } from '@mantine/notifications'
 
 export type Auth = {
+  id: string
   email: string
   clerkAuth: ReturnType<typeof useClerkAuth> | null
   firebaseAuth: ReturnType<typeof useFirebaseAuth> | null
@@ -78,7 +79,8 @@ export const UserDataProvider: FC<UserDataProviderProps> = ({
   }, [clerkAuth.isLoaded, clerkAuth.isSignedIn, syncAuthWithFirebase])
 
   const auth: Auth = {
-    email: clerkUser.user?.primaryEmailAddress?.emailAddress || '',
+    id: clerkUser.user?.id ?? clerkAuth.userId ?? firebaseAuth.currentUser?.uid ?? '',
+    email: clerkUser.user?.primaryEmailAddress?.emailAddress ?? '',
     clerkAuth: clerkAuth,
     firebaseAuth: firebaseAuth,
     signOut: async () => {
@@ -112,7 +114,7 @@ export type UserData = {
 }
 
 export type UserDataContext = {
-  id: string
+  userId: string
   auth: Auth
   userDataStatus: ReturnType<typeof useFirestoreDocData>['status']
   userData: UserData
@@ -148,8 +150,9 @@ const defaultUserData: UserData = {
 }
 
 const defaultUserContext: UserDataContext = {
-  id: '',
+  userId: '',
   auth: {
+    id: '',
     email: '',
     clerkAuth: null,
     firebaseAuth: null,
@@ -215,7 +218,7 @@ const UserDataLoader: FC<UserDataLoaderProps> = ({
   }
 
   const value: UserDataContext = {
-    id: auth.firebaseAuth?.currentUser?.uid ?? '',
+    userId: auth.firebaseAuth?.currentUser?.uid ?? '',
     auth: auth,
     userDataStatus: status,
     userData: userData,

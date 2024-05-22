@@ -40,7 +40,6 @@ export const useRouteGuard = (
 
   useEffect(() => {
     routeGuardFunction()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...dependencies, routeGuardFunction])
 }
 

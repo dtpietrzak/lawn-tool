@@ -26,7 +26,8 @@ export const getAgdu = (weather_data: T.WeatherData) => {
   const agdu = weather_data.gdd
 }
 
-export const getF = (c: number) => {
+export const getF = (c?: number | null) => {
+  if (!c) return 0
   //  °F = °C × (9/5) + 32
   return c * (9/5) + 32
 }

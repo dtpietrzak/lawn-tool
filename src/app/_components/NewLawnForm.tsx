@@ -17,7 +17,7 @@ const NewLawnForm: FC<NewLawnFormProps> = ({
   defaultOpen,
 }) => {
 
-  const { id: userId, updateUserData } = useUserData()
+  const { userId, updateUserData } = useUserData()
   const { addLawnData } = useLawnData()
   const router = useRouter()
 

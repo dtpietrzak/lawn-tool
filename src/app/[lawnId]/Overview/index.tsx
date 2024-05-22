@@ -1,14 +1,10 @@
-import { Card, Divider, Flex, Text, Title } from "@mantine/core";
+import { Card, Divider, Flex, Table, Text, Title } from "@mantine/core";
 import { FC } from "react";
 import TabContainer from "../_components/tabs/TabContainer";
-import EditText from "../_components/EditText";
-import { isValidAmount } from "@/_tools/utils";
 import useLawnData, { LawnData, LawnEvent } from "@/_hooks/useLawnData";
 import useWeatherData, { WeatherApiMappedData } from "@/_hooks/useWeatherData";
-import { IconArrowLeft, IconArrowRight, IconDroplet, IconPlant2 } from "@tabler/icons-react";
-import { format } from 'date-fns'
-import { WeatherApiForecastDay } from "@/app/api/tools/requests_types";
-import { DateDataArray } from "@/app/types";
+import { IconArrowLeft, IconArrowRight, IconArrowUp, IconDroplet, IconPlant2 } from "@tabler/icons-react";
+import { differenceInHours, differenceInMinutes, format } from 'date-fns'
 
 export type OverviewProps = {
 }
@@ -46,14 +42,14 @@ const Overview: FC<OverviewProps> = () => {
         <Title size='h4'>
           Rain Gauge
         </Title>
-        <Flex mt='lg'>
+        <Flex mt={8}>
           <RainGauge
             backward
-            array={history}
+            array={transformedData.weatherApiMapped}
           />
           <RainGauge
             foreward
-            array={forecast}
+            array={transformedData.weatherApiMapped}
           />
         </Flex>
       </Card>
@@ -61,20 +57,18 @@ const Overview: FC<OverviewProps> = () => {
         <Title size='h4'>
           AGDU Gauge
         </Title>
-        <Flex mt='lg'>
-          <GrassGauge
-            weatherApiMapped={transformedData.weatherApiMapped}
-            viewingLawn={viewingLawn}
-            lastMow={lastMow}
-          />
-        </Flex>
+        <GrassGauge
+          array={transformedData.weatherApiMapped}
+          viewingLawn={viewingLawn}
+          lastMow={lastMow}
+        />
       </Card>
     </TabContainer>
   )
 }
 
 type RainGaugeProps = {
-  array: WeatherApiForecastDay[]
+  array: WeatherApiMappedData[]
   backward?: boolean
   foreward?: boolean
 }
@@ -83,6 +77,11 @@ const RainGauge: FC<RainGaugeProps> = ({
   array, backward, foreward,
 }) => {
   if (!array) array = []
+
+  const filtered = array.filter((x) => {
+    if (backward) return x.pastOrFuture === 'past'
+    if (foreward) return x.pastOrFuture === 'future'
+  })
 
   return (
     <Flex
@@ -114,8 +113,8 @@ const RainGauge: FC<RainGaugeProps> = ({
         justify='space-between'
       >
         <Text size="xs" c="blue">
-          {`${array.reduce((acc, cur) => {
-            return acc + cur.day.totalprecip_in
+          {`${filtered.reduce((acc, cur) => {
+            return acc + cur.rain
           }, 0).toFixed(2)}"`}
         </Text>
         <Text size="xs" c='blue' opacity={0.5}>
@@ -123,12 +122,12 @@ const RainGauge: FC<RainGaugeProps> = ({
         </Text>
       </Flex>
       {
-        array.map((forecastday) => {
-          const date = format(forecastday.date_epoch * 1000, 'M-d')
+        filtered.map((day) => {
+          const date = format(day.epoch, 'M-d')
           const currentDate = format(new Date(), 'M-d')
 
           return (
-            <div key={forecastday.date_epoch}>
+            <div key={day.epoch}>
               <Flex
                 direction='row'
                 columnGap={8}
@@ -136,7 +135,7 @@ const RainGauge: FC<RainGaugeProps> = ({
                 className="w-full"
               >
                 <Text size="xs">
-                  {`${forecastday.day.totalprecip_in}"`}
+                  {`${day.rain}"`}
                 </Text>
                 <Text size="xs" c={date === currentDate ? 'white' : 'dimmed'}>
                   {date}
@@ -152,17 +151,64 @@ const RainGauge: FC<RainGaugeProps> = ({
 }
 
 type GrassGaugeProps = {
-  weatherApiMapped?: WeatherApiMappedData[]
+  array?: WeatherApiMappedData[]
   viewingLawn?: LawnData
   lastMow?: LawnEvent<'mow'>
 }
 
 const GrassGauge: FC<GrassGaugeProps> = ({
-  weatherApiMapped, viewingLawn, lastMow,
+  array, viewingLawn, lastMow,
 }) => {
-  if (!weatherApiMapped || !viewingLawn?.properties.mow || !lastMow?.id) {
+  if (!array || !viewingLawn?.properties.mow || !lastMow?.id) {
     return <>Loading...</>
   }
+
+  const today = new Date(new Date().setHours(0, 0, 0, 0)).getTime()
+  const todayFormatted = format(new Date(today), 'M-d')
+  const lastMowDay = new Date(new Date(lastMow.datetime).setHours(0, 0, 0, 0)).getTime()
+  const lastMowDayFormatted = format(new Date(lastMowDay), 'M-d')
+  const partialDay = differenceInHours(lastMow.datetime, lastMowDay) / 24
+  const filtered = array.filter((x) => (
+    x.epoch >= today || x.epoch >= lastMowDay
+  ))
+
+  let inchesGrownAccumulator = 0
+  let percentCutAccumulator = 0
+
+  const processed = filtered.map((x) => {
+    if (!x.gdd_v2 || !x.agdu_p1) return null
+    const dateFormatted = format(x.epoch, 'M-d')
+    const dayOfWeek = format(x.epoch, 'EEE')
+
+    let _agdu = x.agdu_p1
+
+    if (dateFormatted === lastMowDayFormatted) {
+      _agdu = _agdu * partialDay
+    }
+
+
+
+
+    inchesGrownAccumulator += _agdu
+
+    const oneThird = viewingLawn?.properties.mow / 3
+    const ratioToCut = (inchesGrownAccumulator / oneThird) / 3
+    const percentCut = (ratioToCut * 100)
+
+    percentCutAccumulator += percentCut
+
+    return {
+      isToday: dateFormatted === todayFormatted,
+      isMowDay: dateFormatted === lastMowDayFormatted,
+      percentCut: percentCut.toFixed(0),
+      percentCutAccumulator: percentCutAccumulator.toFixed(0),
+      inchesGrown: _agdu.toFixed(2),
+      inchesGrownAccumulator: inchesGrownAccumulator.toFixed(2),
+      dateFormatted: dateFormatted,
+      dayOfWeek: dayOfWeek,
+      ...x,
+    }
+  })
 
   return (
     <Flex
@@ -174,7 +220,7 @@ const GrassGauge: FC<GrassGaugeProps> = ({
     >
       <Flex columnGap={12}>
         <IconPlant2 size={16} color="green" />
-        <IconArrowRight size={16} color="green" />
+        <IconArrowUp size={16} color="green" />
       </Flex>
       <Flex
         direction='row'
@@ -188,52 +234,48 @@ const GrassGauge: FC<GrassGaugeProps> = ({
           {`${viewingLawn?.properties.mow}"`}
         </Text>
       </Flex>
-      {
-        weatherApiMapped.map((data) => {
-          if (!data.gdd_v2 || !data.agdu_p1) return null
-          const date = format(data.epoch, 'M-d')
-          const currentDate = format(new Date(), 'M-d')
-          const lastMowDate = format(lastMow.datetime, 'M-d')
-
-
-          const agduQuarter = data.agdu_p1 / 4
-          const oneThird = viewingLawn?.properties.mow / 3
-          const ratioToCut = (agduQuarter / oneThird)
-          const percentToCut = (ratioToCut * 100).toFixed(0)
-
-          return (
-            <div key={data.epoch}>
-              {
-                lastMowDate === date &&
-                <Divider color="white" mb='sm' />
-              }
-              <Flex
-                direction='row'
-                columnGap={8}
-                justify='space-between'
-                className="w-full"
-              >
-                <Text size="xs" c='yellow'>
-                  {data.high}
-                </Text>
-                <Text size="xs" c='blue'>
-                  {data.low}
-                </Text>
-                <Text size="xs" c='dimmed'>
-                  {`${percentToCut}%`}
-                </Text>
-                <Text size="xs">
-                  {`${data.agdu_p1.toFixed(2)}"`}
-                </Text>
-                <Text size="xs" c={date === currentDate ? 'white' : 'dimmed'}>
-                  {date}
-                </Text>
-              </Flex>
-              <Divider />
-            </div>
-          )
-        })
-      }
+      <Table>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th><Text size="xs">temp</Text></Table.Th>
+            <Table.Th><Text size="xs">gro</Text></Table.Th>
+            <Table.Th><Text size="xs">cut</Text></Table.Th>
+            <Table.Th><Text size="xs">day</Text></Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {
+            processed.map((data) => {
+              if (!data) return null
+              return (
+                <Table.Tr key={data.epoch} className="p-0">
+                  <Table.Td c='yellow' className="p-0">
+                    <div className="text-[10px]">{data.avg}</div>
+                    <div className="text-[9px] text-blue-400 flex flex-row items-center -mt-1 ml-1 p-0">
+                      <IconDroplet size={8} />{`${data.rainChance}%`}
+                    </div>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="xs">{`${data.inchesGrownAccumulator}"`}</Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Text size="xs">{`${data.percentCutAccumulator}%`}</Text>
+                  </Table.Td>
+                  <Table.Td c={
+                    data.isToday ? 'white' :
+                      data.isMowDay ? 'rgb(0, 150, 0)' : 'dimmed'
+                  }>
+                    <div className="flex flex-row justify-between">
+                      <Text size="xs">{data.dayOfWeek}</Text>
+                      <Text size="xs">{data.dateFormatted}</Text>
+                    </div>
+                  </Table.Td>
+                </Table.Tr>
+              )
+            })
+          }
+        </Table.Tbody>
+      </Table>
     </Flex>
   )
 }
