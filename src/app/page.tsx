@@ -7,14 +7,18 @@ import { UserButton } from "@clerk/nextjs"
 import { Button, Center, Flex, Space, Text, Title } from "@mantine/core"
 
 export default function Home() {
-  const { auth } = useUserData()
+  const { auth, userId } = useUserData()
   const { lawnArray, viewingLawn } = useLawnData()
 
   useRouteGuard(() => {
     if (auth.isLockedAndLoaded) {
       if (lawnArray?.length) {
         if (viewingLawn?.id) {
-          return `/${viewingLawn.id}`
+          if (viewingLawn.owner !== userId) {
+            return '/new-lawn'
+          } else {
+            return `/${viewingLawn.id}`
+          }
         } else if (lawnArray?.[0]?.id) {
           return `/${lawnArray[0].id}`
         }
@@ -22,7 +26,7 @@ export default function Home() {
         return '/new-lawn'
       }
     }
-  }, [auth.isLockedAndLoaded, lawnArray, viewingLawn?.id], 'app/page')
+  }, [auth.isLockedAndLoaded, lawnArray, userId, viewingLawn?.id, viewingLawn?.owner], 'app/page')
 
   return (
     <main className="flex min-h-screen h-screen flex-col gap-2">
