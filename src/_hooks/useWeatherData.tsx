@@ -13,7 +13,7 @@ import { DeepSetter, getValidatedZip } from '@/_tools/utils'
 import { getDailyGdd, getF } from '@/_tools/formulae'
 import useLawnData from './useLawnData'
 import { WeatherApiForecastDay } from '@/app/api/tools/requests_types'
-import { differenceInMinutes, format, parse } from 'date-fns'
+import { differenceInHours, differenceInMinutes, format, parse } from 'date-fns'
 
 const GET_ON_DEV = true;
 
@@ -65,7 +65,10 @@ export const defaultContext = {
   transformedData: {
     dataByDateArray: [] as DateDataArray,
     weeklyData: undefined as WeeklyData,
-    weatherApiMapped: [] as WeatherApiMappedData[],
+    weatherApiMapped: [] as MappedDataItem[],
+    noaaMapped: [] as MappedDataItemNullable[],
+    aggregateData: [] as MappedDataItem[],
+    processedData: [] as ProcessedMappedDataItem[],
   },
   reloadWeatherData: () => { },
 }
@@ -130,6 +133,9 @@ export const WeatherDataProvider: FC<WeatherDataProviderProps> = ({
           }
         },
         weatherApiMapped: [],
+        noaaMapped: [],
+        aggregateData: [],
+        processedData: [],
       }
     }
 
@@ -139,12 +145,17 @@ export const WeatherDataProvider: FC<WeatherDataProviderProps> = ({
     const weatherApiForecast = weatherData.weatherApi
       .forecast.forecast.forecastday
       .map((day) => mapWeatherApi(day, 'cool', 'future'))
-    const weatherApiMapped = [...weatherApiHistory, ...weatherApiForecast]
-      .sort((a, b) => a.epoch - b.epoch)
+    const weatherApiMapped = uniqueByDateString(
+      [...weatherApiHistory, ...weatherApiForecast]
+        .sort((a, b) => (a.epoch ?? 0) - (b.epoch ?? 0))
+    )
 
     const noaaMapped = convertAndMapNoaa(weatherData.noaa.forecast.periods)
 
-    console.log(noaaMapped)
+    const aggregateData = deriveAggregateData({
+      weatherApiMapped: weatherApiMapped,
+      noaaMapped: noaaMapped,
+    })
 
     let dataHashedByDate: DateDataObject = {}
     let internalData: Record<string, {
@@ -226,6 +237,52 @@ export const WeatherDataProvider: FC<WeatherDataProviderProps> = ({
     if (!weeklyMaxTemp) weeklyMaxTemp = 0
     if (!weeklyMinTemp) weeklyMinTemp = 0
 
+    let processed: ProcessedMappedDataItem[] = []
+
+    if (lastMow && viewingLawn) {
+      const today = new Date(new Date().setHours(0, 0, 0, 0)).getTime()
+      const todayFormatted = format(new Date(today), 'M-d')
+      const lastMowDay = new Date(new Date(lastMow.datetime).setHours(0, 0, 0, 0)).getTime()
+      const lastMowDayFormatted = format(new Date(lastMowDay), 'M-d')
+      const partialDay = differenceInHours(lastMow.datetime, lastMowDay) / 24
+      const filtered = aggregateData.filter((x) => (
+        x.epoch >= today || x.epoch >= lastMowDay
+      ))
+
+      let inchesGrownAccumulator = 0
+      let percentCutAccumulator = 0
+
+      processed = filtered.map((x) => {
+        const dateFormatted = format(x.epoch, 'M-d')
+        const dayOfWeek = format(x.epoch, 'EEE')
+
+        let _agdu = x.agdu_p1
+
+        if (dateFormatted === lastMowDayFormatted) {
+          _agdu = _agdu * partialDay
+        }
+        inchesGrownAccumulator += _agdu
+
+        const oneThird = viewingLawn?.properties.mow / 3
+        const ratioToCut = (inchesGrownAccumulator / oneThird) / 3
+        const percentCut = (ratioToCut * 100)
+
+        percentCutAccumulator += percentCut
+
+        return {
+          isToday: dateFormatted === todayFormatted,
+          isMowDay: dateFormatted === lastMowDayFormatted,
+          percentCut: percentCut.toFixed(0),
+          percentCutAccumulator: percentCutAccumulator.toFixed(0),
+          inchesGrown: _agdu.toFixed(2),
+          inchesGrownAccumulator: inchesGrownAccumulator.toFixed(2),
+          dateFormatted: dateFormatted,
+          dayOfWeek: dayOfWeek,
+          ...x,
+        }
+      })
+    }
+
     return {
       dataByDateArray: Object.values(dataHashedByDate),
       weeklyData: {
@@ -236,8 +293,11 @@ export const WeatherDataProvider: FC<WeatherDataProviderProps> = ({
         }
       },
       weatherApiMapped: weatherApiMapped ?? [],
+      noaaMapped: noaaMapped ?? [],
+      aggregateData: aggregateData ?? [],
+      processedData: processed ?? [],
     }
-  }, [failedRequest, lastMow?.meta.height, weatherData])
+  }, [failedRequest, lastMow, viewingLawn, weatherData])
 
   return (
     <WeatherDataContext.Provider value={{
@@ -297,7 +357,7 @@ const fetchWeatherUpdate = async (zip_code: string) => {
 }
 
 
-export type WeatherApiMappedData = {
+export type MappedDataItem = {
   pastOrFuture: 'past' | 'future',
   dateString: string,
   epoch: number;
@@ -311,7 +371,7 @@ export type WeatherApiMappedData = {
   rainChance: number;
 }
 
-export type MappedDataItem = {
+export type MappedDataItemNullable = {
   pastOrFuture: 'past' | 'future'
   dateString: string | null
   epoch: number | null
@@ -325,11 +385,26 @@ export type MappedDataItem = {
   rainChance: number | null
 }
 
+
+
+export type ProcessedMappedDataItem = {
+  isToday: boolean,
+  isMowDay: boolean,
+  percentCut: string,
+  percentCutAccumulator: string,
+  inchesGrown: string,
+  inchesGrownAccumulator: string,
+  dateFormatted: string,
+  dayOfWeek: string,
+} & MappedDataItem
+
+
+
 const convertAndMapNoaa = (
   periodArray: NoaaPeriod[],
 ) => {
   let combiner: Record<string, NoaaPeriod[]> = {}
-  let combound: MappedDataItem[];
+  let combound: MappedDataItemNullable[];
 
   for (let i = 0; i < periodArray.length; i++) {
     const dateAsKey = format(wipeTimezone(periodArray[i].startTime), 'yyMMdd')
@@ -342,7 +417,7 @@ const convertAndMapNoaa = (
   }
 
   combound = Object.values(combiner).map((periodSet) => {
-    const data: MappedDataItem = {
+    const data: MappedDataItemNullable = {
       pastOrFuture: 'future',
       dateString: null,
       epoch: null,
@@ -352,7 +427,7 @@ const convertAndMapNoaa = (
     }
 
     // date stuff
-    data['dateString'] = format(wipeTimezone(periodSet[0].startTime), 'MM-dd-yy hh:mm a')
+    data['dateString'] = format(wipeTimezone(periodSet[0].startTime), 'MM-dd-yy')
     data['epoch'] = new Date(wipeTimezone(periodSet[0].startTime)).getTime()
 
     let rainChance: number = 0
@@ -364,16 +439,18 @@ const convertAndMapNoaa = (
           getF(period.temperature.value) : period.temperature.value
         // rainChance - ensures the highest rainchance is always chosen
         const _rainChance = period.probabilityOfPrecipitation.value ?? 0
-        rainChance = _rainChance > rainChance ? rainChance : _rainChance
+        rainChance = _rainChance > rainChance ? _rainChance : rainChance
       } else if (period.isDaytime === false) {
         // temp stuff
         data['low'] = period.temperature.unitCode === 'wmoUnit:degC' ?
           getF(period.temperature.value) : period.temperature.value
         // rainChance - ensures the highest rainchance is always chosen
         const _rainChance = period.probabilityOfPrecipitation.value ?? 0
-        rainChance = _rainChance > rainChance ? rainChance : _rainChance
+        rainChance = _rainChance > rainChance ? _rainChance : rainChance
       }
     })
+
+    data['rainChance'] = rainChance
 
     return data
   })
@@ -386,7 +463,7 @@ const mapWeatherApi = (
   day: WeatherApiForecastDay,
   seasonType: 'warm' | 'cool',
   pastOrFuture: 'past' | 'future',
-) => {
+): MappedDataItem => {
   const gdd_v2 = getGDDv2(
     day.day.maxtemp_f,
     day.day.mintemp_f,
@@ -405,7 +482,7 @@ const mapWeatherApi = (
 
   return ({
     pastOrFuture: pastOrFuture,
-    dateString: format(wipeTimezone(day.date_epoch * 1000), 'MM-dd-yy hh:mm a'),
+    dateString: format(wipeTimezone(day.date_epoch * 1000), 'MM-dd-yy'),
     epoch: new Date(wipeTimezone(day.date_epoch * 1000)).getTime(),
     high: day.day.maxtemp_f,
     low: day.day.mintemp_f,
@@ -417,6 +494,49 @@ const mapWeatherApi = (
     rainChance: day.day.daily_chance_of_rain,
   })
 }
+
+const uniqueByDateString = (data: MappedDataItem[]) => Object.values(
+  data.reduce((acc: Record<string, MappedDataItem & { count: number }>, curr: MappedDataItem) => {
+    const { dateString, high, low, avg, epoch, rain, rainWill, rainChance, gdd_v2, agdu_p1, pastOrFuture } = curr;
+
+    if (!acc[dateString]) {
+      // Initialize the entry in the accumulator if it doesn't exist
+      acc[dateString] = { ...curr, count: 1 };
+    } else {
+      // Merge the current object with the existing one in the accumulator
+      const existing = acc[dateString];
+
+      // Determine the highest rain, rainWill, and rainChance
+      existing.rain = Math.max(existing.rain, rain);
+      existing.rainWill = Math.max(existing.rainWill, rainWill);
+      existing.rainChance = Math.max(existing.rainChance, rainChance);
+
+      // Determine the highest high and the lowest low
+      existing.high = Math.max(existing.high, high);
+      existing.low = Math.min(existing.low, low);
+
+      // Average the avg, gdd_v2, and agdu_p1 values
+      existing.avg = (existing.avg * existing.count + avg) / (existing.count + 1);
+      existing.gdd_v2 = (existing.gdd_v2 * existing.count + gdd_v2) / (existing.count + 1);
+      existing.agdu_p1 = (existing.agdu_p1 * existing.count + agdu_p1) / (existing.count + 1);
+
+      // Set the earliest epoch
+      existing.epoch = Math.min(existing.epoch, epoch);
+
+      // Determine if it should be past or future
+      existing.pastOrFuture = (existing.pastOrFuture === 'future' || pastOrFuture === 'future') ? 'future' : 'past';
+
+      // Increment the count for averaging purposes
+      existing.count += 1;
+    }
+
+    return acc;
+  }, {})
+).map(obj => {
+  // Remove the count property as it is no longer needed
+  const { count, ...rest } = obj;
+  return rest;
+})
 
 const tempTransform = (temp: number, seasonType: 'warm' | 'cool') => {
   // some say all base 50, others say cool = 32 warm = 50
@@ -466,7 +586,7 @@ const getAgdu_p1 = (
   const humidity_mod = ((humidity * 0.1) + 90) / 100
   const weather_code_mod = weatherCodeModTable[condition_code]
 
-  const agdu_per_inch_mod = 100
+  const agdu_per_inch_mod = 105
 
   const total_p1_mod = sun_mod * uv_mod * humidity_mod * weather_code_mod
 
@@ -481,6 +601,57 @@ const convertWeatherApiTimeToJsDate = (time: string) => {
 }
 
 const weatherCodeModTable = { "1000": 1, "1003": 0.99, "1006": 0.98, "1009": 0.96, "1030": 0.975, "1063": 0.95, "1066": 0.925, "1069": 0.925, "1072": 0.925, "1087": 0.9, "1114": 0.85, "1117": 0.8, "1135": 0.92, "1147": 0.9, "1150": 0.95, "1153": 0.94, "1168": 0.925, "1171": 0.9, "1180": 0.94, "1183": 0.925, "1186": 0.9, "1189": 0.89, "1192": 0.875, "1195": 0.85, "1198": 0.9, "1201": 0.875, "1204": 0.9, "1207": 0.875, "1210": 0.925, "1213": 0.9, "1216": 0.875, "1219": 0.85, "1222": 0.825, "1225": 0.8, "1237": 0.85, "1240": 0.94, "1243": 0.875, "1246": 0.85, "1249": 0.9, "1252": 0.875, "1255": 0.9, "1258": 0.85, "1261": 0.9, "1264": 0.85, "1273": 0.9, "1276": 0.85, "1279": 0.875, "1282": 0.825 }
+
+
+
+const deriveAggregateData = (p: {
+  weatherApiMapped: MappedDataItem[]
+  noaaMapped: MappedDataItemNullable[]
+}): MappedDataItem[] => {
+  console.table(p.weatherApiMapped)
+  console.table(p.noaaMapped)
+
+
+  const noaaDateStrings = p.noaaMapped
+    .map((x) => x.dateString)
+    .filter(Boolean) as string[]
+
+  return p.weatherApiMapped.map((x) => {
+    let noaaIndex: number | null = null
+    if (noaaDateStrings.find((noaaDateString, i) => {
+      if (noaaDateString === x.dateString) {
+        noaaIndex = i
+        return true
+      }
+    }) && typeof noaaIndex === 'number') {
+      const rainChance = p.noaaMapped[noaaIndex].rainChance ? ((x.rainChance + p.noaaMapped[noaaIndex].rainChance!) / 2) : x.rainChance
+
+      const high = p.noaaMapped[noaaIndex].high ? ((x.high + p.noaaMapped[noaaIndex].high!) / 2) : x.high
+
+      const low = p.noaaMapped[noaaIndex].low ? ((x.low + p.noaaMapped[noaaIndex].low!) / 2) : x.low
+
+      const avg = (x.avg + ((high + low) / 2)) / 2
+
+      return {
+        agdu_p1: x.agdu_p1,
+        avg: avg,
+        dateString: x.dateString,
+        epoch: x.epoch,
+        gdd_v2: x.gdd_v2,
+        high: high,
+        low: low,
+        pastOrFuture: x.pastOrFuture,
+        rain: x.rain,
+        rainChance: rainChance,
+        rainWill: x.rainWill,
+      }
+    } else {
+      return x
+    }
+  })
+}
+
+
 
 export const useWeatherData = () => useContext(WeatherDataContext)
 
