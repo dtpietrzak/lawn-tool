@@ -264,7 +264,7 @@ export const WeatherDataProvider: FC<WeatherDataProviderProps> = ({
         inchesGrownAccumulator += _agdu
 
         const oneThird = viewingLawn?.properties.mow / 3
-        const ratioToCut = (inchesGrownAccumulator / oneThird) / 3
+        const ratioToCut = (_agdu / oneThird)
         const percentCut = (ratioToCut * 100)
 
         percentCutAccumulator += percentCut
@@ -369,6 +369,9 @@ export type MappedDataItem = {
   rain: number;
   rainWill: number;
   rainChance: number;
+  dayDescription?: string // only on future (from noaa)
+  nightDescription?: string; // only on future (from noaa)
+  dayName?: string; // only on future (from noaa)
 }
 
 export type MappedDataItemNullable = {
@@ -383,6 +386,9 @@ export type MappedDataItemNullable = {
   rain?: number
   rainWill?: number
   rainChance: number | null
+  dayDescription?: string // only on future (from noaa)
+  nightDescription?: string // only on future (from noaa)
+  dayName?: string; // only on future (from noaa)
 }
 
 
@@ -431,6 +437,7 @@ const convertAndMapNoaa = (
     data['epoch'] = new Date(wipeTimezone(periodSet[0].startTime)).getTime()
 
     let rainChance: number = 0
+    let dayName: string = ''
 
     periodSet.forEach((period) => {
       if (period.isDaytime === true) {
@@ -440,6 +447,10 @@ const convertAndMapNoaa = (
         // rainChance - ensures the highest rainchance is always chosen
         const _rainChance = period.probabilityOfPrecipitation.value ?? 0
         rainChance = _rainChance > rainChance ? _rainChance : rainChance
+        if (period.detailedForecast) {
+          data['dayDescription'] = period.detailedForecast
+        }
+        if (!dayName) dayName = period.name
       } else if (period.isDaytime === false) {
         // temp stuff
         data['low'] = period.temperature.unitCode === 'wmoUnit:degC' ?
@@ -447,10 +458,15 @@ const convertAndMapNoaa = (
         // rainChance - ensures the highest rainchance is always chosen
         const _rainChance = period.probabilityOfPrecipitation.value ?? 0
         rainChance = _rainChance > rainChance ? _rainChance : rainChance
+        if (period.detailedForecast) {
+          data['nightDescription'] = period.detailedForecast
+        }
+        if (!dayName) dayName = period.name
       }
     })
 
     data['rainChance'] = rainChance
+    data['dayName'] = dayName
 
     return data
   })
@@ -608,10 +624,6 @@ const deriveAggregateData = (p: {
   weatherApiMapped: MappedDataItem[]
   noaaMapped: MappedDataItemNullable[]
 }): MappedDataItem[] => {
-  console.table(p.weatherApiMapped)
-  console.table(p.noaaMapped)
-
-
   const noaaDateStrings = p.noaaMapped
     .map((x) => x.dateString)
     .filter(Boolean) as string[]
@@ -624,7 +636,7 @@ const deriveAggregateData = (p: {
         return true
       }
     }) && typeof noaaIndex === 'number') {
-      const rainChance = p.noaaMapped[noaaIndex].rainChance ? ((x.rainChance + p.noaaMapped[noaaIndex].rainChance!) / 2) : x.rainChance
+      const rainChance = p.noaaMapped[noaaIndex].rainChance ? ((x.rainChance + (p.noaaMapped[noaaIndex].rainChance! * 2)) / 3) : x.rainChance
 
       const high = p.noaaMapped[noaaIndex].high ? ((x.high + p.noaaMapped[noaaIndex].high!) / 2) : x.high
 
@@ -644,6 +656,9 @@ const deriveAggregateData = (p: {
         rain: x.rain,
         rainChance: rainChance,
         rainWill: x.rainWill,
+        dayName: p.noaaMapped[noaaIndex].dayName,
+        dayDescription: p.noaaMapped[noaaIndex].dayDescription,
+        nightDescription: p.noaaMapped[noaaIndex].nightDescription,
       }
     } else {
       return x

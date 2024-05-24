@@ -250,7 +250,7 @@ const GrassGauge: FC<GrassGaugeProps> = ({
                     {
                       data.rainWill && data.pastOrFuture === 'future' ?
                         <div className="text-[9px] text-blue-400 flex flex-row items-center -mt-1 ml-1 p-0 opacity-60">
-                          <IconDroplet size={8} />{`${data.rainChance}%`}
+                          <IconDroplet size={8} />{`${data.rainChance.toFixed(0)}%`}
                         </div>
                         : null
                     }

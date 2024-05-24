@@ -1,6 +1,6 @@
 import { getF } from "@/_tools/formulae"
 import { Flex, Text } from "@mantine/core"
-import { IconMoon, IconSun } from "@tabler/icons-react"
+import { IconMoon, IconMoon2, IconMoonStars, IconSun, IconSunLow, IconSunMoon, IconSunrise, IconSunset, IconSunset2 } from "@tabler/icons-react"
 import { FC } from "react"
 import IconAndText from "../../_components/IconAndText"
 
