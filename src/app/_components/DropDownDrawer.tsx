@@ -1,4 +1,4 @@
-import { Accordion, Title } from '@mantine/core'
+import { Accordion, Box, Title } from '@mantine/core'
 import { FC } from 'react'
 
 export type DropDownDrawerProps = {
@@ -16,8 +16,8 @@ const DropDownDrawer: FC<DropDownDrawerProps> = ({
     <Accordion
       defaultValue={defaultOpen ? 'drawer' : ''}
     >
-      <Accordion.Item key={'drawer'} value={'drawer'}>
-        <Accordion.Control>
+      <Accordion.Item key={'drawer'} value={'drawer'} className='border-0'>
+        <Accordion.Control className='rounded-lg'>
           <Title size="h4">
             {title}
           </Title>

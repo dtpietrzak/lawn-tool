@@ -1,12 +1,12 @@
 'use client'
 
-import { Button, Card, Flex, Text, Title, Modal, Group } from "@mantine/core";
+import { Button, Card, Flex, Text, Title, Modal, Group, List, ThemeIcon, rem } from "@mantine/core";
 import { FC, useState } from "react";
 import TabContainer from "../_components/tabs/TabContainer";
 import useWeatherData from "@/_hooks/useWeatherData";
-import useLawnData from "@/_hooks/useLawnData";
+import useLawnData, { LawnEvent, LawnEventType } from "@/_hooks/useLawnData";
 import AddEventForm from "./_components/AddEventForm";
-import { IconTrash } from "@tabler/icons-react";
+import { IconRotateRectangle, IconTimelineEvent, IconTrash } from "@tabler/icons-react";
 import { useDisclosure } from '@mantine/hooks'
 
 export type LawnProps = {
@@ -68,42 +68,66 @@ const Lawn: FC<LawnProps> = () => {
               </Text>
             </div>
           </Flex>
+          <AddEventForm />
         </Card>
-        <AddEventForm />
-        {
-          eventsArray?.map((lawnEvent) => {
-            return (
-              <Card key={lawnEvent.id}>
-                <Flex justify='space-between'>
-                  <div>
-                    <Title size="h4">
-                      {lawnEvent.type}
-                    </Title>
-                    <Text size="xs">
-                      {lawnEvent.datetime.toDateString()}
-                    </Text>
-                    {
-                      Object.entries(lawnEvent.meta).map(([key, value], i) => {
-                        return (
-                          <Text key={i} size="xs">
-                            {key}: {value}
-                          </Text>
-                        )
-                      })
-                    }
-                  </div>
-                  <div>
-                    <Button color='red' variant="light"
-                      onClick={() => handleDeleteClick(lawnEvent.id)}
+        <Card>
+          <Title size="h4">
+            Event Log
+          </Title>
+          <List center>
+            {
+              eventsArray?.map((lawnEvent) => {
+                return (
+                  <Card key={lawnEvent.id}
+                    my='xs'
+                    shadow="lg"
+                    bg="dark"
+                    p="xs"
+                  >
+                    <List.Item
+                      styles={{
+                        itemWrapper: { width: '100%' },
+                        itemLabel: { width: '100%' },
+                      }}
+                      icon={iconSwitch(lawnEvent.type)}
                     >
-                      <IconTrash />
-                    </Button>
-                  </div>
-                </Flex>
-              </Card>
-            )
-          })
-        }
+                      <Flex justify='space-between' align='center'>
+                        <div className="flex flex-row justify-start items-start gap-3">
+                          <div>
+                            <Title size="h5">
+                              {lawnEvent.type}
+                            </Title>
+                          </div>
+                          <div>
+                            <Text size="xs">
+                              {lawnEvent.datetime.toDateString()}
+                            </Text>
+                            {
+                              Object.entries(lawnEvent.meta).map(([key, value], i) => {
+                                return (
+                                  <Text key={i} size="xs">
+                                    {key}: {value}
+                                  </Text>
+                                )
+                              })
+                            }
+                          </div>
+                        </div>
+                        <div>
+                          <Button color='red' variant="light" w={40} p={0}
+                            onClick={() => handleDeleteClick(lawnEvent.id)}
+                          >
+                            <IconTrash />
+                          </Button>
+                        </div>
+                      </Flex>
+                    </List.Item>
+                  </Card>
+                )
+              })
+            }
+          </List>
+        </Card>
       </TabContainer>
       <Modal
         opened={opened}
@@ -125,6 +149,25 @@ const Lawn: FC<LawnProps> = () => {
       </Modal>
     </>
   )
+}
+
+const iconSwitch = (type: LawnEventType) => {
+  switch (type) {
+    case 'mow': return (
+      <ThemeIcon color="green" size={24} radius="xl">
+        <IconRotateRectangle
+          style={{ width: rem(16), height: rem(16) }}
+        />
+      </ThemeIcon>
+    )
+    default: return (
+      <ThemeIcon color="teal" size={24} radius="xl">
+        <IconTimelineEvent
+          style={{ width: rem(16), height: rem(16) }}
+        />
+      </ThemeIcon>
+    )
+  }
 }
 
 export default Lawn

@@ -17,96 +17,73 @@ export type ForecastProps = {
 const Forecast: FC<ForecastProps> = () => {
   const { transformedData } = useWeatherData()
   const { userData } = useUserData()
+  const { lastMow } = useLawnData()
+
+  const futureData = transformedData.processedData.filter(
+    (x) => (x.pastOrFuture === 'future')
+  )
 
   return (
     <TabContainer>
       {
-        transformedData.dataByDateArray.map((data) => {
-          if (data.noaa.day && data.noaa.night) {
-            const day = data.noaa.day
-            const night = data.noaa.night
+        futureData.map((data) => {
+          const growth =
+            parseFloat(data.inchesGrownAccumulator) +
+            (lastMow?.meta?.height ?? 0)
 
-            return (
-              <Card key={day.number}>
-                <Flex direction="column" gap="2">
-                  <Flex justify="space-between">
-                    <Title
-                      size='md'
+          return (
+            <Card key={data.epoch}>
+              <Flex direction="column" gap="2">
+                <Flex justify="space-between">
+                  <Title
+                    size='md'
+                  >
+                    {data?.isToday ? 'Today' : data?.dayName === 'Tonight' ? 'Tomorrow' : data?.dayName ?? ''}
+                  </Title>
+                  {
+                    userData.tabOptions.forecast.date &&
+                    <Text
+                      size='sm'
+                      c="dimmed"
                     >
-                      {day.name}
-                    </Title>
-                    {
-                      userData.tabOptions.forecast.date &&
-                      <Text
-                        size='sm'
-                        c="dimmed"
-                      >
-                        {formatDate(day.startTime)}
-                      </Text>
-                    }
-                  </Flex>
-                  <Flex justify="space-between">
-                    <Flex gap="xs" justify="space-between" className="w-full">
-                      <Flex gap="xs" justify="space-between">
-                        <Temperature
-                          temperature={data.temp.day}
-                          isDaytime={day.isDaytime}
-                        />
-                        <Temperature
-                          temperature={data.temp.night}
-                          isDaytime={night.isDaytime}
-                        />
-                      </Flex>
-                      <GrowingDegreeDays
-                        text={
-                          `${data.growth.agdu}" (${data.growth.gdd})`
-                        }
+                      {data.dateString}
+                    </Text>
+                  }
+                </Flex>
+                <Flex justify="space-between">
+                  <Flex gap="xs" justify="space-between" className="w-full">
+                    <Flex gap="xs" justify="space-between">
+                      <Temperature
+                        temperature={data.low.toFixed(0)}
+                        isDaytime={false}
                       />
-                      <IconAndText
-                        icon={
-                          <IconDroplet
-                            color={
-                              (
-                                day.probabilityOfPrecipitation.value &&
-                                day.probabilityOfPrecipitation.value > 30
-                              ) ?
-                                "cyan"
-                                :
-                                "gray"
-                            }
-                          />
-                        }
-                        text={`${day.probabilityOfPrecipitation.value ?? "0"}%`}
+                      <Temperature
+                        temperature={data.high.toFixed(0)}
+                        isDaytime={true}
                       />
                     </Flex>
+                    <GrowingDegreeDays
+                      text={
+                        `${growth.toFixed(2)}" (${data.gdd_v2.toFixed(0)})`
+                      }
+                    />
+                    <IconAndText
+                      icon={
+                        <IconDroplet
+                          color={data.rainChance > 30 ? "cyan" : "gray"}
+                        />
+                      }
+                      text={`${data.rainChance.toFixed(0) ?? "0"}%`}
+                    />
                   </Flex>
-                  <div className="mt-1">
-                    <Progress.Root size={4} bg="gray">
-                      <Progress.Section
-                        value={data.tempBar.night}
-                        color="gray.7"
-                      />
-                      <Progress.Section
-                        value={data.tempBar.day}
-                        color="gray.6"
-                      />
-                      <Progress.Section
-                        value={data.tempBar.topper}
-                        color="gray.7"
-                      />
-                    </Progress.Root>
-                  </div>
                 </Flex>
-                <PaperDroppable
-                  dayDescription={data.noaa.day.detailedForecast}
-                  nightDescription={data.noaa.night.detailedForecast}
-                />
-              </Card>
-            )
-          } else {
-            // if there isnt a day and night, then dont return anything
-            return null
-          }
+              </Flex>
+              <PaperDroppable
+                dayDescription={data.dayDescription}
+                nightDescription={data.nightDescription}
+              />
+            </Card>
+          )
         })
       }
     </TabContainer>

@@ -1,7 +1,7 @@
 'use client'
 
 import useLawnData, { LawnEvent, LawnEventType } from "@/_hooks/useLawnData"
-import { Card, Title, SegmentedControl, Text, NumberInput, Group, Button } from "@mantine/core"
+import { Card, SegmentedControl, Text, NumberInput, Group, Button } from "@mantine/core"
 import { useForm } from "@mantine/form"
 import { DateTimePicker } from '@mantine/dates'
 import { FC } from "react"
@@ -43,7 +43,7 @@ const AddEventForm: FC<AddEventFormProps> = ({
   }
 
   return (
-    <Card>
+    <Card shadow="xl" mt="sm" bg="dark" p='xs'>
       <DropDownDrawer title="Add Event" defaultOpen={defaultOpen}>
         <form
           onSubmit={form.onSubmit(handleSubmit)}

@@ -4,8 +4,8 @@ import { IconCaretDown } from "@tabler/icons-react"
 import { FC, useState } from "react"
 
 export type PaperDroppableProps = {
-  dayDescription: string,
-  nightDescription: string,
+  dayDescription?: string,
+  nightDescription?: string,
 }
 
 const PaperDroppable: FC<PaperDroppableProps> = ({
@@ -26,9 +26,11 @@ const PaperDroppable: FC<PaperDroppableProps> = ({
     }
   })
 
+  if (!dayDescription && !nightDescription) return null
+
   return (
     <Paper mt="sm" shadow="sm" radius="md" pr="xs" className="cursor-pointer">
-      <Flex>
+      <Flex justify='space-between'>
         <Flex direction="column" gap="xs" p="xs" onClick={openDescription} className={`overflow-hidden transition-all ${descriptionOpen ? 'max-h-[999px]' : 'max-h-[36px]'} duration-100 ease`}>
           <Flex direction="column" mt={1}>
             {
@@ -45,7 +47,7 @@ const PaperDroppable: FC<PaperDroppableProps> = ({
           </Flex>
           <Flex direction="column" className={`overflow-hidden transition-all ${descriptionOpen ? 'max-h-[999px]' : 'max-h-[0px]'} duration-500 ease`}>
             <Text size='xs' c='dimmed'>
-              {nightDescription}
+              {`Into the night: ${nightDescription}`}
             </Text>
           </Flex>
         </Flex>
